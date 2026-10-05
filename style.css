@@ -1,0 +1,349 @@
+/* Gestaltung des Anfrageformulars – hier Farben, Abstände und Schriften anpassen */
+
+/* ===== Farben (Murrelektronik-Grün) =====
+   --brand   = Markengrün (Akzente, Linie unter dem Kopf)
+   --primary = etwas dunkleres Grün für Buttons und Auswahl, damit weißer Text gut lesbar bleibt
+   Offizielle CI-Farbe? Dann hier ersetzen. */
+:root {
+  --brand:#00963f; --primary:#007a35; --primary-text:#ffffff;
+  --head:#0b5a2b; --head-text:#ffffff;
+  --bg:#f1f5f2; --card:#ffffff; --text:#16231b; --muted:#5a6b60; --line:#cfdad2;
+  --soft:#e4f1e8; --error:#b3261e;
+  --ocard-pad:18px; /* Innenabstand der Ausgangskarten (wird auch für die Feldbreite bei Construction genutzt) */
+}
+@media (prefers-color-scheme: dark) {
+  :root { --brand:#2fb866; --primary:#3cc76f; --primary-text:#06160d;
+          --head:#07170e; --head-text:#e6f2ea;
+          --bg:#0e1511; --card:#16211a; --text:#e5eee8; --muted:#92a69a; --line:#2a3a30;
+          --soft:#1b2d22; --error:#ff8a80; }
+}
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+
+body { margin:0; background:var(--bg); color:var(--text);
+       font:16px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+
+header { background:var(--head); color:var(--head-text); border-bottom:4px solid var(--brand); }
+.head-in { max-width:960px; margin:0 auto; padding:28px 20px; display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+.head-in svg { width:76px; height:auto; flex:none; color:var(--head-text); }
+.head-txt { flex:1; min-width:240px; }
+h1 { font-size:1.45rem; line-height:1.25; margin:0 0 4px; font-weight:600; }
+.head-txt p { margin:0; opacity:.75; font-size:.95rem; }
+.head-txt .rq { color:#ffb4ab; } /* heller Stern, damit er auf Dunkelgrün lesbar ist */
+.head-side { display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+.refbox { border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:6px 14px; text-align:right; }
+.refbox small { display:block; opacity:.7; font-size:.8rem; }
+.refbox strong { font-size:1.25rem; letter-spacing:.02em; }
+
+main { max-width:960px; margin:0 auto; padding:8px 20px 64px; }
+.sec { display:grid; grid-template-columns:210px 1fr; gap:14px; padding:30px 0; border-top:1px solid var(--line); }
+.sec:first-child { border-top:0; }
+.sec h2 { font-size:1.05rem; margin:0 0 4px; }
+.sec .desc { color:var(--muted); font-size:.88rem; margin:0; }
+.grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px 18px; align-content:start; }
+.full { grid-column:1 / -1; }
+.f > label, .f > .lg { display:block; font-weight:600; font-size:.92rem; margin-bottom:6px; }
+.u { color:var(--muted); font-weight:400; }
+.rq { color:var(--error); }
+input[type=text], input[type=number], input[type=date], select, textarea {
+  width:100%; padding:10px 12px; font:inherit; color:var(--text); background:var(--card);
+  border:1px solid var(--line); border-radius:6px; }
+textarea { min-height:84px; resize:vertical; }
+.inp { position:relative; }
+.inp input { padding-right:56px; }
+.inp .u { position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; }
+.pills { display:flex; flex-wrap:wrap; gap:8px; }
+.pill { position:relative; }
+.pill input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+.pill > span { display:inline-block; padding:8px 14px; border:1px solid var(--line); border-radius:999px; background:var(--card); font-size:.93rem; }
+.pill input:checked + span { background:var(--primary); border-color:var(--primary); color:var(--primary-text); }
+.pill input:focus-visible + span, :focus-visible { outline:3px solid var(--primary); outline-offset:2px; }
+.info { margin:0; padding:10px 14px; background:var(--soft); border-radius:6px; font-size:.9rem; }
+.err { display:none; color:var(--error); font-size:.85rem; margin-top:4px; }
+.invalid .err { display:block; }
+/* Pflichtfeld nicht ausgefüllt: rote Umrandung */
+.invalid input[type=text], .invalid input[type=number], .invalid select { border:2px solid var(--error); }
+.err { font-weight:600; }
+.send-err { color:var(--error); font-weight:600; margin:12px 0 0; }
+.invalid .pill > span { border-color:var(--error); }
+
+.slim { max-width:200px; }
+.slider { display:flex; align-items:flex-start; gap:8px; margin-top:10px; padding:10px 10px 4px; background:var(--soft); border:1px solid var(--line); border-radius:6px; }
+.rail { flex:1; position:relative; min-width:0; }
+.rail input[type=range] { -webkit-appearance:none; appearance:none; display:block; width:100%; height:24px; margin:0; background:transparent; cursor:pointer; }
+.rail input[type=range]::-webkit-slider-runnable-track { height:3px; background:var(--text); border-radius:2px; }
+.rail input[type=range]::-moz-range-track { height:3px; background:var(--text); border-radius:2px; }
+.rail input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:24px; margin-top:-10px; border-radius:4px; background:var(--primary); border:2px solid var(--card); box-shadow:0 0 0 1px var(--primary); }
+.rail input[type=range]::-moz-range-thumb { width:12px; height:20px; border-radius:4px; background:var(--primary); border:2px solid var(--card); box-shadow:0 0 0 1px var(--primary); }
+.slider.unset input[type=range]::-webkit-slider-thumb { background:var(--line); box-shadow:0 0 0 1px var(--muted); }
+.slider.unset input[type=range]::-moz-range-thumb { background:var(--line); box-shadow:0 0 0 1px var(--muted); }
+.ticks { position:relative; height:26px; }
+.ticks span { position:absolute; top:0; transform:translateX(-50%); padding-top:8px; font-size:.75rem; color:var(--muted); white-space:nowrap; }
+.ticks span::before { content:""; position:absolute; top:0; left:50%; width:1px; height:6px; background:var(--muted); }
+.arr { flex:none; width:26px; height:24px; border:1px solid var(--muted); background:var(--card); border-radius:4px; cursor:pointer; position:relative; padding:0; }
+.arr::after { content:""; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border:6px solid transparent; }
+.arr[data-dir="-1"]::after { border-right-color:var(--text); margin-left:-3px; }
+.arr[data-dir="1"]::after { border-left-color:var(--text); margin-left:3px; }
+.ocard { border:1px solid var(--line); background:var(--card); border-radius:8px; padding:var(--ocard-pad); margin-bottom:16px; }
+.ocard-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.ocard-head strong { font-size:1rem; }
+.ocard .grid { grid-template-columns:repeat(2, minmax(0,1fr)); }
+
+button.btn { font:inherit; font-weight:600; padding:11px 20px; border-radius:6px; border:1px solid var(--primary); cursor:pointer; }
+.btn.primary { background:var(--primary); color:var(--primary-text); }
+.btn.ghost { background:transparent; color:var(--primary); }
+.btn.small { padding:6px 12px; font-size:.85rem; }
+.actions { display:flex; flex-wrap:wrap; gap:12px; }
+
+.send { border-top:1px solid var(--line); padding-top:28px; }
+.send .note { color:var(--muted); font-size:.9rem; margin:12px 0 0; }
+
+@media (max-width:760px) {
+  .sec { grid-template-columns:1fr; gap:7px; padding:24px 0; }
+  .grid, .ocard .grid { grid-template-columns:1fr 1fr; }
+  .head-side { align-items:flex-start; }
+}
+@media (max-width:480px) { .grid, .ocard .grid { grid-template-columns:1fr; } }
+@media print {
+  header { background:none; color:#000; border-bottom:2px solid #000; }
+  .head-in svg { color:#000; }
+  .actions, .send, .btn { display:none !important; }
+  body { background:#fff; color:#000; }
+  .sec { break-inside:avoid; }
+}
+
+/* ===== Doppel-Schieberegler (min. und max. auf einer Linie) ===== */
+.pair { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.pair .slim { flex:1; min-width:120px; }
+.pair-sep { color:var(--muted); }
+.dual-wrap { position:relative; height:24px; }
+.dual-wrap::before { content:""; position:absolute; left:8px; right:8px; top:50%; height:3px; margin-top:-1.5px; background:var(--text); border-radius:2px; }
+.dual-fill { position:absolute; top:50%; height:5px; margin-top:-2.5px; background:var(--brand); border-radius:3px; }
+.rail .dual-wrap input[type=range] { position:absolute; inset:0; pointer-events:none; }
+.rail .dual-wrap input[type=range]::-webkit-slider-runnable-track { background:transparent; }
+.rail .dual-wrap input[type=range]::-moz-range-track { background:transparent; }
+.rail .dual-wrap input[type=range]::-webkit-slider-thumb { pointer-events:auto; cursor:pointer; }
+.rail .dual-wrap input[type=range]::-moz-range-thumb { pointer-events:auto; cursor:pointer; }
+.rail input[type=range].leer::-webkit-slider-thumb { background:var(--line); box-shadow:0 0 0 1px var(--muted); }
+.rail input[type=range].leer::-moz-range-thumb { background:var(--line); box-shadow:0 0 0 1px var(--muted); }
+
+/* ===== Zahlenfeld und Schieberegler nebeneinander (Spannungen) ===== */
+.slider-row { display:flex; align-items:center; gap:12px; }
+.slider-row .inp { flex:0 0 130px; max-width:130px; }
+/* Hoch-/Runter-Pfeile im Zahlenfeld ausblenden – das übernimmt der Schieberegler */
+.slider-row input[type=number] { -moz-appearance:textfield; appearance:textfield; }
+.slider-row input[type=number]::-webkit-inner-spin-button,
+.slider-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.slider-row .slider { flex:1; min-width:0; margin-top:0; padding:6px 8px 0; }
+.slider-row .arr { width:22px; height:22px; margin-top:1px; }
+.slider-row .ticks { height:22px; }
+.slider-row .ticks span { font-size:.7rem; padding-top:6px; }
+@media (max-width:480px) {
+  .slider-row { flex-wrap:wrap; }
+  .slider-row .slider { flex-basis:100%; }
+}
+
+/* ===== Wiederholbare Felder (z. B. mehrere Eingangsspannungen) ===== */
+.repeat { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px 18px; align-items:start; }
+.repeat .rep-actions { grid-column:1 / -1; }
+.repeat .rep-remove { margin-top:6px; }
+@media (max-width:600px) { .repeat { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+
+/* Stern im Kopfbereich in hellerem Rot, damit er auf Dunkelgrün lesbar ist */
+header .rq { color:#ff9a90; font-weight:700; }
+
+/* ===== Kleiner Erklärtext direkt unter einer Feldüberschrift ===== */
+.sub-note { margin:-2px 0 8px; color:var(--muted); font-size:.88rem; }
+
+/* =====================================================================
+   ANPASSUNG AN GERÄTE (Handy, Tablet, PC) und Touch-Bedienung
+   ===================================================================== */
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+
+/* Ränder bei Handys mit Notch / abgerundeten Ecken freihalten */
+.head-in, main {
+  padding-left:max(20px, env(safe-area-inset-left));
+  padding-right:max(20px, env(safe-area-inset-right));
+}
+
+/* Tablet quer / kleiner Laptop: schmalere Spalte für die Abschnittsüberschriften */
+@media (max-width:1024px) and (min-width:761px) {
+  .sec { grid-template-columns:170px 1fr; }
+}
+
+/* Tablet hoch und Handy: Überschriften über den Feldern, kompakter Kopf */
+@media (max-width:760px) {
+  .head-in { padding-top:18px; padding-bottom:18px; gap:12px 14px; }
+  .head-in svg { width:48px; }
+  .head-txt { flex:1 1 calc(100% - 64px); min-width:0; }
+  h1 { font-size:1.25rem; }
+  .head-side { flex-direction:row; width:100%; }
+  .refbox { display:flex; align-items:baseline; gap:8px; text-align:left; padding:5px 12px; }
+  .refbox small { display:inline; }
+  .refbox strong { font-size:1.1rem; }
+  main { padding-bottom:48px; }
+  :root { --ocard-pad:14px; }
+}
+
+/* Handy: alle Felder untereinander, Regler unter dem Zahlenfeld, große Buttons */
+@media (max-width:600px) {
+  .head-in, main {
+    padding-left:max(16px, env(safe-area-inset-left));
+    padding-right:max(16px, env(safe-area-inset-right));
+  }
+  .grid, .ocard .grid { grid-template-columns:1fr; }
+  .slider-row { flex-wrap:wrap; }
+  .slider-row .inp { flex:0 0 160px; max-width:160px; }
+  .slider-row .slider { flex-basis:100%; }
+  .pair .slim { min-width:0; }
+  .send .actions .btn { flex:1 1 100%; }
+}
+
+/* Touch-Geräte (Handy, Tablet): größere Griffe, Pfeile und Tippflächen */
+@media (pointer:coarse) {
+  .arr, .slider-row .arr { width:36px; height:36px; }
+  .rail input[type=range], .dual-wrap { height:36px; }
+  .rail input[type=range]::-webkit-slider-thumb { width:24px; height:32px; margin-top:-14px; }
+  .rail input[type=range]::-moz-range-thumb { width:20px; height:28px; }
+  .pill > span { padding:10px 16px; }
+  input[type=text], input[type=number], input[type=date], select { min-height:44px; }
+  .btn.small { padding:9px 14px; }
+}
+
+/* =====================================================================
+   DRUCKANSICHT (Print as PDF): Datenblatt mit den ausgefüllten Angaben
+   ===================================================================== */
+#printView { display:none; }
+@media print {
+  @page { size:A4; margin:12mm 12mm 14mm; }
+  header, main { display:none !important; }
+  body { background:#fff; color:#000; font:9pt/1.35 Arial, Helvetica, sans-serif; }
+  /* Farben auch drucken, wenn "Hintergrundgrafiken" im Druckdialog aus ist */
+  #printView, #printView * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  #printView { display:block; }
+
+  .pv-band { display:flex; justify-content:space-between; align-items:flex-end; gap:12px;
+             background:#0b5a2b; color:#fff; padding:10px 12px; border-bottom:3px solid #00963f; }
+  .pv-kicker { font-size:8pt; opacity:.8; }
+  .pv-title { font-size:15pt; font-weight:700; }
+  .pv-ref { text-align:right; font-size:9pt; }
+  .pv-ref span { opacity:.8; }
+
+  .pv-body { display:grid; grid-template-columns:1fr; gap:4mm; margin-top:5mm; } /* Abschnitte untereinander */
+  .pv-sec { break-inside:avoid; border:0.75pt solid #9aa8a0; }
+  .pv-wide { grid-column:1 / -1; }
+  .pv-sec h2 { margin:0; padding:3px 7px; font-size:9.5pt; font-weight:700; color:#fff; background:#007a35; }
+
+  table.pv { width:100%; border-collapse:collapse; }
+  table.pv td, table.pv th { padding:2.5px 7px; vertical-align:top; border-top:0.5pt solid #d3dcd6; text-align:left; }
+  table.pv td.pv-l { width:30%; background:#eef4f0; color:#333; }
+  table.pv-matrix th { background:#dfece4; font-weight:700; border-top:none; }
+  /* breite Abschnitte (Outputs): gleiche Spaltenbreite in Matrix und Zusatzzeilen */
+  .pv-wide table.pv td.pv-l, .pv-wide table.pv-matrix th:first-child { width:30%; }
+  table.pv tr { break-inside:avoid; }
+
+  .pv-foot { margin-top:6mm; padding-top:3px; border-top:0.75pt solid #9aa8a0; font-size:7.5pt; color:#555; }
+}
+
+/* ===== Absenden in zwei Schritten ===== */
+.steps { list-style:none; counter-reset:schritt; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.steps li { counter-increment:schritt; position:relative; display:flex; flex-direction:column; gap:6px;
+            padding:18px 18px 18px 60px; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+.steps li::before { content:counter(schritt); position:absolute; left:18px; top:16px; width:28px; height:28px; border-radius:50%;
+                    background:var(--brand); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.steps span { color:var(--muted); font-size:.9rem; flex:1; }
+.steps .btn { align-self:flex-start; margin-top:6px; }
+@media (max-width:600px) {
+  .steps { grid-template-columns:1fr; }
+  .steps .btn { align-self:stretch; }
+}
+
+/* Schmale Felder (150 px): Nominal frequency, Nominal power */
+.f.narrow { width:150px; max-width:100%; }
+/* In den Ausgangskarten stehen Power und Current eng nebeneinander */
+/* Ausgangskarten: Voltage, Power und Current nebeneinander, gleichmäßig verteilt; auf dem Handy untereinander */
+.ocard .grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; }
+.ocard .grid .full { grid-column:1 / -1; }
+.ocard .f.narrow { width:auto; } /* Felder füllen ihre Spalte, die Spalten sind gleichmäßig über die Karte verteilt */
+@media (max-width:540px) { .ocard .grid { grid-template-columns:1fr; } }
+
+/* Beschriftungen in schmalen Feldern etwas kleiner, damit Sternchen nicht allein in die nächste Zeile rutscht */
+.f.narrow > label { font-size:.8rem; }
+.repeat .rep-item > label, .freq-row > label { font-size:.85rem; line-height:1.3; }
+@media (min-width:601px) { .f.narrow > label { white-space:nowrap; } }
+
+/* Abmessungen: Höhe, Breite und Tiefe in einer Reihe */
+.grid.dims { grid-template-columns:repeat(3, minmax(0,1fr)); }
+@media (max-width:440px) { .grid.dims { grid-template-columns:1fr; } }
+
+/* In den breiteren Ausgangsfeldern gilt wieder die normale Schriftgröße der Beschriftung */
+@media (min-width:601px) { .ocard .f.narrow > label { font-size:.92rem; white-space:normal; } }
+
+/* Construction: IP code und Insulation class genauso breit wie Nominal voltage / power in den Ausgangskarten
+   (ein Drittel der Kartenbreite abzüglich Kartenrand und Abständen) */
+.grid.cons { grid-template-columns:repeat(3, calc((100% - 2 * (var(--ocard-pad) + 1px) - 36px) / 3)) 1fr; }
+@media (max-width:540px) { .grid.cons { grid-template-columns:1fr; } }
+
+/* Dropdown (Insulation class) gleich hoch wie die Eingabefelder */
+select { height:46px; }
+
+/* Ambient temperature: min. und max. je halb so breit wie die anderen Felder (z. B. IP code), Abstand dazwischen bleibt, Schieberegler darunter über die ganze Breite */
+.grid.cons { --abstand-temp:48px; --feld3:calc((100% - 2 * (var(--ocard-pad) + 1px) - 36px) / 3); } /* Abstand zwischen min. und max.; Breite eines normalen Feldes */
+.grid.cons .span2 { grid-column:1 / -1; }
+.grid.cons .pair { --temp-feld:max(96px, calc(var(--feld3) / 2)); /* mindestens 96 px, damit z. B. -40 lesbar bleibt */ display:grid; grid-template-columns:repeat(2, var(--temp-feld)); column-gap:var(--abstand-temp); position:relative; }
+.grid.cons .pair .slim { max-width:none; min-width:0; }
+.grid.cons .pair .inp input { padding-right:34px; padding-left:12px; } /* weniger Platz für die Einheit, damit die Zahl in das schmale Feld passt */
+.grid.cons .pair input[type=number] { -moz-appearance:textfield; appearance:textfield; } /* Zahlenpfeile ausblenden: der Regler übernimmt das */
+.grid.cons .pair input[type=number]::-webkit-inner-spin-button, .grid.cons .pair input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.grid.cons .pair-sep { position:absolute; left:calc(var(--temp-feld) + var(--abstand-temp) / 2); top:50%; transform:translate(-50%,-50%); font-size:.8rem; }
+@media (max-width:540px) {
+  .grid.cons { --abstand-temp:36px; }
+  .grid.cons .pair { --temp-feld:max(96px, calc((100% - var(--abstand-temp)) / 4)); }
+}
+
+/* Frequenz: eigene Zeile, Feld so breit wie ein Spannungsfeld darüber (4 pro Zeile, am Handy 2), Hinweis rechts daneben */
+.freq-line { display:flex; align-items:center; gap:14px; }
+.freq-line .inp { flex:0 0 calc((100% - 54px) / 4); }
+.freq-hint { color:var(--muted); font-size:.9rem; white-space:nowrap; }
+@media (max-width:600px) { .freq-line .inp { flex-basis:calc((100% - 18px) / 2); } }
+
+/* Applicant: Name breit, Datum schmal */
+.grid.appl { grid-template-columns:minmax(0,1fr) calc((100% - 36px) / 3); } /* Datum so breit wie ein Feld bei Dimensions (z. B. Depth D) */
+@media (max-width:540px) { .grid.appl { grid-template-columns:1fr; } .grid.appl .f:last-child { max-width:200px; } }
+
+/* Dunkles Design: Symbole der Eingabefelder (Kalender-Symbol, Dropdown-Pfeil, Zahlenpfeile) hell darstellen */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme:dark; }
+  input[type=date]::-webkit-calendar-picker-indicator { cursor:pointer; }
+}
+
+/* Inquiry: Customer eine Zeile, darunter Quantity, Total planned quantity und Delivery time in einer Zeile */
+.grid.cols3 { grid-template-columns:repeat(3, minmax(0,1fr)); }
+@media (max-width:520px) { .grid.cols3 { grid-template-columns:1fr; } }
+.grid.cols3 .f > label { white-space:nowrap; }
+/* Kurze Beschriftungen nur dort, wo die langen nicht in die Spalte passen */
+.lg-short { display:none; }
+@media (max-width:652px), (min-width:761px) and (max-width:844px) {
+  .grid.cols3 .lg-long { display:none; }
+  .grid.cols3 .lg-short { display:inline; }
+  .grid.cols3 .f > label { font-size:.85rem; }
+}
+@media (max-width:520px) { .grid.cols3 .lg-long { display:inline; } .grid.cols3 .lg-short { display:none; } .grid.cols3 .f > label { font-size:.92rem; } }
+
+/* Beschriftung „min" und „max" über den Griffen des Doppelreglers */
+.slider.dual { padding-top:26px; }
+.dual-tag { position:absolute; top:-19px; font-size:.7rem; font-weight:700; line-height:1; color:var(--primary); pointer-events:none; white-space:nowrap; }
+.dual-tag-min { transform:translateX(calc(-50% - var(--v, 0px))); }
+.dual-tag-max { transform:translateX(calc(-50% + var(--v, 0px))); }
+
+/* Einfacher Sichtschutz; kein serverseitiger Passwortschutz */
+body.locked > header, body.locked > main, body.locked > #printView { visibility:hidden; }
+#passwordGate { position:fixed; z-index:1000; inset:0; display:grid; place-items:center; padding:20px; background:var(--bg); }
+.password-card { width:min(100%, 420px); padding:28px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:0 12px 36px rgba(0,0,0,.12); }
+.password-card h1 { margin:0 0 8px; font-size:1.4rem; }
+.password-card p { margin:0 0 18px; color:var(--muted); }
+.password-card label { display:block; margin-bottom:6px; font-weight:600; }
+.password-card input { width:100%; min-height:44px; margin-bottom:14px; padding:10px 12px; font:inherit; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:6px; }
+.password-card .btn { width:100%; }
+.password-error { margin:10px 0 0 !important; color:var(--error) !important; font-weight:600; }
+@media print { #passwordGate { display:none !important; } }
