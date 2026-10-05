@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Inquiry: customized transformer</title>
+<style>
+/* Gestaltung des Anfrageformulars – hier Farben, Abstände und Schriften anpassen */
+
+/* ===== Farben (Murrelektronik-Grün) =====
+   --brand   = Markengrün (Akzente, Linie unter dem Kopf)
+   --primary = etwas dunkleres Grün für Buttons und Auswahl, damit weißer Text gut lesbar bleibt
+   Offizielle CI-Farbe? Dann hier ersetzen. */
+:root {
+  --brand:#00963f; --primary:#007a35; --primary-text:#ffffff;
+  --head:#0b5a2b; --head-text:#ffffff;
+  --bg:#f1f5f2; --card:#ffffff; --text:#16231b; --muted:#5a6b60; --line:#cfdad2;
+  --soft:#e4f1e8; --error:#b3261e;
+  --ocard-pad:18px; /* Innenabstand der Ausgangskarten (wird auch für die Feldbreite bei Construction genutzt) */
+}
+@media (prefers-color-scheme: dark) {
+  :root { --brand:#2fb866; --primary:#3cc76f; --primary-text:#06160d;
+          --head:#07170e; --head-text:#e6f2ea;
+          --bg:#0e1511; --card:#16211a; --text:#e5eee8; --muted:#92a69a; --line:#2a3a30;
+          --soft:#1b2d22; --error:#ff8a80; }
+}
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+
+body { margin:0; background:var(--bg); color:var(--text);
+       font:16px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+
+header { background:var(--head); color:var(--head-text); border-bottom:4px solid var(--brand); }
+.head-in { max-width:960px; margin:0 auto; padding:28px 20px; display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+.head-in svg { width:76px; height:auto; flex:none; color:var(--head-text); }
+.head-txt { flex:1; min-width:240px; }
+h1 { font-size:1.45rem; line-height:1.25; margin:0 0 4px; font-weight:600; }
+.head-txt p { margin:0; opacity:.75; font-size:.95rem; }
+.head-txt .rq { color:#ffb4ab; } /* heller Stern, damit er auf Dunkelgrün lesbar ist */
+.head-side { display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+.refbox { border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:6px 14px; text-align:right; }
+.refbox small { display:block; opacity:.7; font-size:.8rem; }
+.refbox strong { font-size:1.25rem; letter-spacing:.02em; }
+
+main { max-width:960px; margin:0 auto; padding:8px 20px 64px; }
+.sec { display:grid; grid-template-columns:210px 1fr; gap:14px; padding:30px 0; border-top:1px solid var(--line); }
+.sec:first-child { border-top:0; }
+.sec h2 { font-size:1.05rem; margin:0 0 4px; }
+.sec .desc { color:var(--muted); font-size:.88rem; margin:0; }
+.grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px 18px; align-content:start; }
+.full { grid-column:1 / -1; }
+.f > label, .f > .lg { display:block; font-weight:600; font-size:.92rem; margin-bottom:6px; }
+.u { color:var(--muted); font-weight:400; }
+.rq { color:var(--error); }
+input[type=text], input[type=number], input[type=date], select, textarea {
+  width:100%; padding:10px 12px; font:inherit; color:var(--text); background:var(--card);
+  border:1px solid var(--line); border-radius:6px; }
+textarea { min-height:84px; resize:vertical; }
+.inp { position:relative; }
+.inp input { padding-right:56px; }
+.inp .u { position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; }
+.pills { display:flex; flex-wrap:wrap; gap:8px; }
+.pill { position:relative; }
+.pill input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+.pill > span { display:inline-block; padding:8px 14px; border:1px solid var(--line); border-radius:999px; background:var(--card); font-size:.93rem; }
+.pill input:checked + span { background:var(--primary); border-color:var(--primary); color:var(--primary-text); }
+.pill input:focus-visible + span, :focus-visible { outline:3px solid var(--primary); outline-offset:2px; }
+.info { margin:0; padding:10px 14px; background:var(--soft); border-radius:6px; font-size:.9rem; }
+.err { display:none; color:var(--error); font-size:.85rem; margin-top:4px; }
+.invalid .err { display:block; }
+/* Pflichtfeld nicht ausgefüllt: rote Umrandung */
+.invalid input[type=text], .invalid input[type=number], .invalid select { border:2px solid var(--error); }
+.err { font-weight:600; }
+.send-err { color:var(--error); font-weight:600; margin:12px 0 0; }
+.invalid .pill > span { border-color:var(--error); }
+
+.slim { max-width:200px; }
+.slider { display:flex; align-items:flex-start; gap:8px; margin-top:10px; padding:10px 10px 4px; background:var(--soft); border:1px solid var(--line); border-radius:6px; }
+.rail { flex:1; position:relative; min-width:0; }
+.rail input[type=range] { -webkit-appearance:none; appearance:none; display:block; width:100%; height:24px; margin:0; background:transparent; cursor:pointer; }
+.rail input[type=range]::-webkit-slider-runnable-track { height:3px; background:var(--text); border-radius:2px; }
+.rail input[type=range]::-moz-range-track { height:3px; background:var(--text); border-radius:2px; }
+.rail input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:24px; margin-top:-10px; border-radius:4px; background:var(--primary); border:2px solid var(--card); box-shadow:0 0 0 1px var(--primary); }
+.rail input[type=range]::-moz-range-thumb { width:12px; height:20px; border-radius:4px; background:var(--primary); border:2px solid var(--card); box-shadow:0 0 0 1px var(--primary); }
+.slider.unset input[type=range]::-webkit-slider-thumb { background:var(--line); box-shadow:0 0 0 1px var(--muted); }
+.slider.unset input[type=range]::-moz-range-thumb { background:var(--line); box-shadow:0 0 0 1px var(--muted); }
+.ticks { position:relative; height:26px; }
+.ticks span { position:absolute; top:0; transform:translateX(-50%); padding-top:8px; font-size:.75rem; color:var(--muted); white-space:nowrap; }
+.ticks span::before { content:""; position:absolute; top:0; left:50%; width:1px; height:6px; background:var(--muted); }
+.arr { flex:none; width:26px; height:24px; border:1px solid var(--muted); background:var(--card); border-radius:4px; cursor:pointer; position:relative; padding:0; }
+.arr::after { content:""; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border:6px solid transparent; }
+.arr[data-dir="-1"]::after { border-right-color:var(--text); margin-left:-3px; }
+.arr[data-dir="1"]::after { border-left-color:var(--text); margin-left:3px; }
+.ocard { border:1px solid var(--line); background:var(--card); border-radius:8px; padding:var(--ocard-pad); margin-bottom:16px; }
+.ocard-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.ocard-head strong { font-size:1rem; }
+.ocard .grid { grid-template-columns:repeat(2, minmax(0,1fr)); }
+
+button.btn { font:inherit; font-weight:600; padding:11px 20px; border-radius:6px; border:1px solid var(--primary); cursor:pointer; }
+.btn.primary { background:var(--primary); color:var(--primary-text); }
+.btn.ghost { background:transparent; color:var(--primary); }
+.btn.small { padding:6px 12px; font-size:.85rem; }
+.actions { display:flex; flex-wrap:wrap; gap:12px; }
+
+.send { border-top:1px solid var(--line); padding-top:28px; }
+.send .note { color:var(--muted); font-size:.9rem; margin:12px 0 0; }
+
+@media (max-width:760px) {
+  .sec { grid-template-columns:1fr; gap:7px; padding:24px 0; }
+  .grid, .ocard .grid { grid-template-columns:1fr 1fr; }
+  .head-side { align-items:flex-start; }
+}
+@media (max-width:480px) { .grid, .ocard .grid { grid-template-columns:1fr; } }
+@media print {
+  header { background:none; color:#000; border-bottom:2px solid #000; }
+  .head-in svg { color:#000; }
+  .actions, .send, .btn { display:none !important; }
+  body { background:#fff; color:#000; }
+  .sec { break-inside:avoid; }
+}
+
+/* ===== Doppel-Schieberegler (min. und max. auf einer Linie) ===== */
+.pair { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.pair .slim { flex:1; min-width:120px; }
+.pair-sep { color:var(--muted); }
+.dual-wrap { position:relative; height:24px; }
+.dual-wrap::before { content:""; position:absolute; left:8px; right:8px; top:50%; height:3px; margin-top:-1.5px; background:var(--text); border-radius:2px; }
+.dual-fill { position:absolute; top:50%; height:5px; margin-top:-2.5px; background:var(--brand); border-radius:3px; }
+.rail .dual-wrap input[type=range] { position:absolute; inset:0; pointer-events:none; }
+.rail .dual-wrap input[type=range]::-webkit-slider-runnable-track { background:transparent; }
+.rail .dual-wrap input[type=range]::-moz-range-track { background:transparent; }
+.rail .dual-wrap input[type=range]::-webkit-slider-thumb { pointer-events:auto; cursor:pointer; }
+.rail .dual-wrap input[type=range]::-moz-range-thumb { pointer-events:auto; cursor:pointer; }
+.rail input[type=range].leer::-webkit-slider-thumb { background:var(--line); box-shadow:0 0 0 1px var(--muted); }
+.rail input[type=range].leer::-moz-range-thumb { background:var(--line); box-shadow:0 0 0 1px var(--muted); }
+
+/* ===== Zahlenfeld und Schieberegler nebeneinander (Spannungen) ===== */
+.slider-row { display:flex; align-items:center; gap:12px; }
+.slider-row .inp { flex:0 0 130px; max-width:130px; }
+/* Hoch-/Runter-Pfeile im Zahlenfeld ausblenden – das übernimmt der Schieberegler */
+.slider-row input[type=number] { -moz-appearance:textfield; appearance:textfield; }
+.slider-row input[type=number]::-webkit-inner-spin-button,
+.slider-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.slider-row .slider { flex:1; min-width:0; margin-top:0; padding:6px 8px 0; }
+.slider-row .arr { width:22px; height:22px; margin-top:1px; }
+.slider-row .ticks { height:22px; }
+.slider-row .ticks span { font-size:.7rem; padding-top:6px; }
+@media (max-width:480px) {
+  .slider-row { flex-wrap:wrap; }
+  .slider-row .slider { flex-basis:100%; }
+}
+
+/* ===== Wiederholbare Felder (z. B. mehrere Eingangsspannungen) ===== */
+.repeat { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px 18px; align-items:start; }
+.repeat .rep-actions { grid-column:1 / -1; }
+.repeat .rep-remove { margin-top:6px; }
+@media (max-width:600px) { .repeat { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+
+/* Stern im Kopfbereich in hellerem Rot, damit er auf Dunkelgrün lesbar ist */
+header .rq { color:#ff9a90; font-weight:700; }
+
+/* ===== Kleiner Erklärtext direkt unter einer Feldüberschrift ===== */
+.sub-note { margin:-2px 0 8px; color:var(--muted); font-size:.88rem; }
+
+/* =====================================================================
+   ANPASSUNG AN GERÄTE (Handy, Tablet, PC) und Touch-Bedienung
+   ===================================================================== */
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+
+/* Ränder bei Handys mit Notch / abgerundeten Ecken freihalten */
+.head-in, main {
+  padding-left:max(20px, env(safe-area-inset-left));
+  padding-right:max(20px, env(safe-area-inset-right));
+}
+
+/* Tablet quer / kleiner Laptop: schmalere Spalte für die Abschnittsüberschriften */
+@media (max-width:1024px) and (min-width:761px) {
+  .sec { grid-template-columns:170px 1fr; }
+}
+
+/* Tablet hoch und Handy: Überschriften über den Feldern, kompakter Kopf */
+@media (max-width:760px) {
+  .head-in { padding-top:18px; padding-bottom:18px; gap:12px 14px; }
+  .head-in svg { width:48px; }
+  .head-txt { flex:1 1 calc(100% - 64px); min-width:0; }
+  h1 { font-size:1.25rem; }
+  .head-side { flex-direction:row; width:100%; }
+  .refbox { display:flex; align-items:baseline; gap:8px; text-align:left; padding:5px 12px; }
+  .refbox small { display:inline; }
+  .refbox strong { font-size:1.1rem; }
+  main { padding-bottom:48px; }
+  :root { --ocard-pad:14px; }
+}
+
+/* Handy: alle Felder untereinander, Regler unter dem Zahlenfeld, große Buttons */
+@media (max-width:600px) {
+  .head-in, main {
+    padding-left:max(16px, env(safe-area-inset-left));
+    padding-right:max(16px, env(safe-area-inset-right));
+  }
+  .grid, .ocard .grid { grid-template-columns:1fr; }
+  .slider-row { flex-wrap:wrap; }
+  .slider-row .inp { flex:0 0 160px; max-width:160px; }
+  .slider-row .slider { flex-basis:100%; }
+  .pair .slim { min-width:0; }
+  .send .actions .btn { flex:1 1 100%; }
+}
+
+/* Touch-Geräte (Handy, Tablet): größere Griffe, Pfeile und Tippflächen */
+@media (pointer:coarse) {
+  .arr, .slider-row .arr { width:36px; height:36px; }
+  .rail input[type=range], .dual-wrap { height:36px; }
+  .rail input[type=range]::-webkit-slider-thumb { width:24px; height:32px; margin-top:-14px; }
+  .rail input[type=range]::-moz-range-thumb { width:20px; height:28px; }
+  .pill > span { padding:10px 16px; }
+  input[type=text], input[type=number], input[type=date], select { min-height:44px; }
+  .btn.small { padding:9px 14px; }
+}
+
+/* =====================================================================
+   DRUCKANSICHT (Print as PDF): Datenblatt mit den ausgefüllten Angaben
+   ===================================================================== */
+#printView { display:none; }
+@media print {
+  @page { size:A4; margin:12mm 12mm 14mm; }
+  header, main { display:none !important; }
+  body { background:#fff; color:#000; font:9pt/1.35 Arial, Helvetica, sans-serif; }
+  /* Farben auch drucken, wenn "Hintergrundgrafiken" im Druckdialog aus ist */
+  #printView, #printView * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  #printView { display:block; }
+
+  .pv-band { display:flex; justify-content:space-between; align-items:flex-end; gap:12px;
+             background:#0b5a2b; color:#fff; padding:10px 12px; border-bottom:3px solid #00963f; }
+  .pv-kicker { font-size:8pt; opacity:.8; }
+  .pv-title { font-size:15pt; font-weight:700; }
+  .pv-ref { text-align:right; font-size:9pt; }
+  .pv-ref span { opacity:.8; }
+
+  .pv-body { display:grid; grid-template-columns:1fr; gap:4mm; margin-top:5mm; } /* Abschnitte untereinander */
+  .pv-sec { break-inside:avoid; border:0.75pt solid #9aa8a0; }
+  .pv-wide { grid-column:1 / -1; }
+  .pv-sec h2 { margin:0; padding:3px 7px; font-size:9.5pt; font-weight:700; color:#fff; background:#007a35; }
+
+  table.pv { width:100%; border-collapse:collapse; }
+  table.pv td, table.pv th { padding:2.5px 7px; vertical-align:top; border-top:0.5pt solid #d3dcd6; text-align:left; }
+  table.pv td.pv-l { width:30%; background:#eef4f0; color:#333; }
+  table.pv-matrix th { background:#dfece4; font-weight:700; border-top:none; }
+  /* breite Abschnitte (Outputs): gleiche Spaltenbreite in Matrix und Zusatzzeilen */
+  .pv-wide table.pv td.pv-l, .pv-wide table.pv-matrix th:first-child { width:30%; }
+  table.pv tr { break-inside:avoid; }
+
+  .pv-foot { margin-top:6mm; padding-top:3px; border-top:0.75pt solid #9aa8a0; font-size:7.5pt; color:#555; }
+}
+
+/* ===== Absenden in zwei Schritten ===== */
+.steps { list-style:none; counter-reset:schritt; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.steps li { counter-increment:schritt; position:relative; display:flex; flex-direction:column; gap:6px;
+            padding:18px 18px 18px 60px; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+.steps li::before { content:counter(schritt); position:absolute; left:18px; top:16px; width:28px; height:28px; border-radius:50%;
+                    background:var(--brand); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.steps span { color:var(--muted); font-size:.9rem; flex:1; }
+.steps .btn { align-self:flex-start; margin-top:6px; }
+@media (max-width:600px) {
+  .steps { grid-template-columns:1fr; }
+  .steps .btn { align-self:stretch; }
+}
+
+/* Schmale Felder (150 px): Nominal frequency, Nominal power */
+.f.narrow { width:150px; max-width:100%; }
+/* In den Ausgangskarten stehen Power und Current eng nebeneinander */
+/* Ausgangskarten: Voltage, Power und Current nebeneinander, gleichmäßig verteilt; auf dem Handy untereinander */
+.ocard .grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; }
+.ocard .grid .full { grid-column:1 / -1; }
+.ocard .f.narrow { width:auto; } /* Felder füllen ihre Spalte, die Spalten sind gleichmäßig über die Karte verteilt */
+@media (max-width:540px) { .ocard .grid { grid-template-columns:1fr; } }
+
+/* Beschriftungen in schmalen Feldern etwas kleiner, damit Sternchen nicht allein in die nächste Zeile rutscht */
+.f.narrow > label { font-size:.8rem; }
+.repeat .rep-item > label, .freq-row > label { font-size:.85rem; line-height:1.3; }
+@media (min-width:601px) { .f.narrow > label { white-space:nowrap; } }
+
+/* Abmessungen: Höhe, Breite und Tiefe in einer Reihe */
+.grid.dims { grid-template-columns:repeat(3, minmax(0,1fr)); }
+@media (max-width:440px) { .grid.dims { grid-template-columns:1fr; } }
+
+/* In den breiteren Ausgangsfeldern gilt wieder die normale Schriftgröße der Beschriftung */
+@media (min-width:601px) { .ocard .f.narrow > label { font-size:.92rem; white-space:normal; } }
+
+/* Construction: IP code und Insulation class genauso breit wie Nominal voltage / power in den Ausgangskarten
+   (ein Drittel der Kartenbreite abzüglich Kartenrand und Abständen) */
+.grid.cons { grid-template-columns:repeat(3, calc((100% - 2 * (var(--ocard-pad) + 1px) - 36px) / 3)) 1fr; }
+@media (max-width:540px) { .grid.cons { grid-template-columns:1fr; } }
+
+/* Dropdown (Insulation class) gleich hoch wie die Eingabefelder */
+select { height:46px; }
+
+/* Ambient temperature: min. und max. je halb so breit wie die anderen Felder (z. B. IP code), Abstand dazwischen bleibt, Schieberegler darunter über die ganze Breite */
+.grid.cons { --abstand-temp:48px; --feld3:calc((100% - 2 * (var(--ocard-pad) + 1px) - 36px) / 3); } /* Abstand zwischen min. und max.; Breite eines normalen Feldes */
+.grid.cons .span2 { grid-column:1 / -1; }
+.grid.cons .pair { --temp-feld:max(96px, calc(var(--feld3) / 2)); /* mindestens 96 px, damit z. B. -40 lesbar bleibt */ display:grid; grid-template-columns:repeat(2, var(--temp-feld)); column-gap:var(--abstand-temp); position:relative; }
+.grid.cons .pair .slim { max-width:none; min-width:0; }
+.grid.cons .pair .inp input { padding-right:34px; padding-left:12px; } /* weniger Platz für die Einheit, damit die Zahl in das schmale Feld passt */
+.grid.cons .pair input[type=number] { -moz-appearance:textfield; appearance:textfield; } /* Zahlenpfeile ausblenden: der Regler übernimmt das */
+.grid.cons .pair input[type=number]::-webkit-inner-spin-button, .grid.cons .pair input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.grid.cons .pair-sep { position:absolute; left:calc(var(--temp-feld) + var(--abstand-temp) / 2); top:50%; transform:translate(-50%,-50%); font-size:.8rem; }
+@media (max-width:540px) {
+  .grid.cons { --abstand-temp:36px; }
+  .grid.cons .pair { --temp-feld:max(96px, calc((100% - var(--abstand-temp)) / 4)); }
+}
+
+/* Frequenz: eigene Zeile, Feld so breit wie ein Spannungsfeld darüber (4 pro Zeile, am Handy 2), Hinweis rechts daneben */
+.freq-line { display:flex; align-items:center; gap:14px; }
+.freq-line .inp { flex:0 0 calc((100% - 54px) / 4); }
+.freq-hint { color:var(--muted); font-size:.9rem; white-space:nowrap; }
+@media (max-width:600px) { .freq-line .inp { flex-basis:calc((100% - 18px) / 2); } }
+
+/* Applicant: Name breit, Datum schmal */
+.grid.appl { grid-template-columns:minmax(0,1fr) calc((100% - 36px) / 3); } /* Datum so breit wie ein Feld bei Dimensions (z. B. Depth D) */
+@media (max-width:540px) { .grid.appl { grid-template-columns:1fr; } .grid.appl .f:last-child { max-width:200px; } }
+
+/* Dunkles Design: Symbole der Eingabefelder (Kalender-Symbol, Dropdown-Pfeil, Zahlenpfeile) hell darstellen */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme:dark; }
+  input[type=date]::-webkit-calendar-picker-indicator { cursor:pointer; }
+}
+
+/* Inquiry: Customer eine Zeile, darunter Quantity, Total planned quantity und Delivery time in einer Zeile */
+.grid.cols3 { grid-template-columns:repeat(3, minmax(0,1fr)); }
+@media (max-width:520px) { .grid.cols3 { grid-template-columns:1fr; } }
+.grid.cols3 .f > label { white-space:nowrap; }
+/* Kurze Beschriftungen nur dort, wo die langen nicht in die Spalte passen */
+.lg-short { display:none; }
+@media (max-width:652px), (min-width:761px) and (max-width:844px) {
+  .grid.cols3 .lg-long { display:none; }
+  .grid.cols3 .lg-short { display:inline; }
+  .grid.cols3 .f > label { font-size:.85rem; }
+}
+@media (max-width:520px) { .grid.cols3 .lg-long { display:inline; } .grid.cols3 .lg-short { display:none; } .grid.cols3 .f > label { font-size:.92rem; } }
+
+/* Beschriftung „min" und „max" über den Griffen des Doppelreglers */
+.slider.dual { padding-top:26px; }
+.dual-tag { position:absolute; top:-19px; font-size:.7rem; font-weight:700; line-height:1; color:var(--primary); pointer-events:none; white-space:nowrap; }
+.dual-tag-min { transform:translateX(calc(-50% - var(--v, 0px))); }
+.dual-tag-max { transform:translateX(calc(-50% + var(--v, 0px))); }
+</style>
+</head>
+<body>
+
+<!-- ================= KOPFBEREICH ================= -->
+<header>
+  <div class="head-in">
+    <svg viewBox="0 0 80 68" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+      <path d="M8 10 H20 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12 H8"/>
+      <path d="M72 10 H60 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12 H72"/>
+      <path d="M36 6 V62 M44 6 V62"/>
+    </svg>
+    <div class="head-txt">
+      <h1>Inquiry: customized transformer</h1>
+      <p>Please fill in what you know. Necessary fields are marked with <span class="rq">*</span>.</p>
+    </div>
+    <div class="head-side">
+      <div class="refbox"><small>Project no.</small><strong id="refVal">–</strong></div>
+    </div>
+  </div>
+</header>
+
+<main>
+<form id="form" novalidate>
+
+  <!-- ================= ANFRAGE ================= -->
+  <section class="sec">
+    <div><h2>Inquiry</h2></div>
+    <div class="grid cols3">
+      <div class="f full" data-req><label for="cust">Customer <span class="rq">*</span></label><input id="cust" name="cust" type="text"><div class="err">Please fill out this box.</div></div>
+      <!-- Auf engen Bildschirmen wird die kurze Beschriftung (lg-short) angezeigt, damit alle drei Felder in eine Zeile passen -->
+      <div class="f" data-req>
+        <label for="qty1"><span class="lg-long">Quantity of first order</span><span class="lg-short">First order qty.</span> <span class="rq">*</span></label>
+        <div class="inp"><input id="qty1" name="qty1" type="number" min="0" placeholder="min. 5"><span class="u">pcs</span></div>
+        <div class="err">Please fill out this box.</div>
+      </div>
+      <div class="f">
+        <label for="aq0"><span class="lg-long">Total planned quantity</span><span class="lg-short">Total planned qty.</span></label>
+        <div class="inp"><input id="aq0" name="aq0" type="number" min="0"><span class="u">pcs</span></div>
+      </div>
+      <div class="f">
+        <label for="delivery"><span class="lg-long">Desired delivery time</span><span class="lg-short">Delivery time</span></label>
+        <input id="delivery" name="delivery" type="date">
+      </div>
+      <!-- erscheint nur, wenn weniger als 5 Stück eingetragen sind (data-show-if-below="feld:grenze") -->
+      <div class="f full" data-req data-show-if-below="qty1:5">
+        <label for="qtyReason">Reason for a first order below 5 pcs <span class="rq">*</span></label>
+        <textarea id="qtyReason" name="qtyReason"></textarea>
+        <div class="err">Please fill out this box.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PRODUKT ================= -->
+  <section class="sec">
+    <div><h2>Product</h2></div>
+    <div class="grid">
+      <div class="f full" data-req>
+        <span class="lg">Product type <span class="rq">*</span></span>
+        <div class="pills">
+          <label class="pill"><input type="radio" name="ptype" value="iso"><span>Isolating transformer</span></label>
+          <label class="pill"><input type="radio" name="ptype" value="auto"><span>Autotransformer</span></label>
+        </div>
+        <div class="err">Please fill out this box.</div>
+      </div>
+      <div class="f full" data-req>
+        <span class="lg">Phases <span class="rq">*</span></span>
+        <div class="pills">
+          <label class="pill"><input type="radio" name="phases" value="1"><span>1 phase</span></label>
+          <label class="pill"><input type="radio" name="phases" value="3"><span>3 phase</span></label>
+        </div>
+        <div class="err">Please fill out this box.</div>
+      </div>
+      <!-- erscheint nur bei 3-phasig, dann Pflicht -->
+      <div class="f narrow" data-show-if="phases:3" data-req>
+        <label for="vector">Vector group <span class="rq">*</span></label>
+        <!-- Textfeld mit Vorschlagsliste: Kunde kann auswählen oder selbst eintippen -->
+        <input id="vector" name="vector" type="text" list="vectorList" placeholder="Select" autocomplete="off">
+        <datalist id="vectorList">
+          <option value="Dyn5">
+          <option value="Dyn11">
+          <option value="Yyn0">
+          <option value="Yzn5">
+          <option value="Yd5">
+        </datalist>
+        <div class="err">Please fill out this box.</div>
+      </div>
+      <div class="f full">
+        <span class="lg">Approvals</span>
+        <p class="sub-note">All products are CE conform. Please indicate special approvals here:</p>
+        <div class="pills">
+          <label class="pill"><input type="checkbox" name="appr" value="ul"><span>UR / UL</span></label>
+          <label class="pill"><input type="checkbox" name="appr" value="gl"><span>GL</span></label>
+          <label class="pill"><input type="checkbox" name="appr" value="other"><span>Other</span></label>
+        </div>
+      </div>
+      <div class="f" data-show-if="appr:other">
+        <label for="apprO">Other approval (specify)</label>
+        <input id="apprO" name="apprO" type="text">
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= EINGANG ================= -->
+  <section class="sec">
+    <div><h2>Input</h2></div>
+    <div class="grid">
+      <!-- Mehrere Eingangsspannungen: bis zu 8, je 4 pro Zeile gleichmäßig verteilt; weitere per Button einblenden (data-repeat) -->
+      <div class="full repeat" data-repeat>
+        <div class="f rep-item" data-req data-nonzero>
+          <label for="inV">Nominal voltage 1&nbsp;<span class="rq">*</span></label>
+          <div class="inp"><input id="inV" name="inV" type="number" step="any" min="0"><span class="u">VAC</span></div>
+          <div class="err">Please fill out this box.</div>
+        </div>
+        <div class="f rep-item" data-req data-nonzero hidden>
+          <label for="inV2">Nominal voltage 2&nbsp;<span class="rq">*</span></label>
+          <div class="inp"><input id="inV2" name="inV2" type="number" step="any" min="0"><span class="u">VAC</span></div>
+          <div class="err">Please fill out this box.</div>
+          <button type="button" class="btn ghost small rep-remove">Remove</button>
+        </div>
+        <div class="f rep-item" data-req data-nonzero hidden>
+          <label for="inV3">Nominal voltage 3&nbsp;<span class="rq">*</span></label>
+          <div class="inp"><input id="inV3" name="inV3" type="number" step="any" min="0"><span class="u">VAC</span></div>
+          <div class="err">Please fill out this box.</div>
+          <button type="button" class="btn ghost small rep-remove">Remove</button>
+        </div>
+        <div class="f rep-item" data-req data-nonzero hidden>
+          <label for="inV4">Nominal voltage 4&nbsp;<span class="rq">*</span></label>
+          <div class="inp"><input id="inV4" name="inV4" type="number" step="any" min="0"><span class="u">VAC</span></div>
+          <div class="err">Please fill out this box.</div>
+          <button type="button" class="btn ghost small rep-remove">Remove</button>
+        </div>
+        <div class="f rep-item" data-req data-nonzero hidden>
+          <label for="inV5">Nominal voltage 5&nbsp;<span class="rq">*</span></label>
+          <div class="inp"><input id="inV5" name="inV5" type="number" step="any" min="0"><span class="u">VAC</span></div>
+          <div class="err">Please fill out this box.</div>
+          <button type="button" class="btn ghost small rep-remove">Remove</button>
+        </div>
+        <div class="f rep-item" data-req data-nonzero hidden>
+          <label for="inV6">Nominal voltage 6&nbsp;<span class="rq">*</span></label>
+          <div class="inp"><input id="inV6" name="inV6" type="number" step="any" min="0"><span class="u">VAC</span></div>
+          <div class="err">Please fill out this box.</div>
+          <button type="button" class="btn ghost small rep-remove">Remove</button>
+        </div>
+        <div class="f rep-item" data-req data-nonzero hidden>
+          <label for="inV7">Nominal voltage 7&nbsp;<span class="rq">*</span></label>
+          <div class="inp"><input id="inV7" name="inV7" type="number" step="any" min="0"><span class="u">VAC</span></div>
+          <div class="err">Please fill out this box.</div>
+          <button type="button" class="btn ghost small rep-remove">Remove</button>
+        </div>
+        <div class="f rep-item" data-req data-nonzero hidden>
+          <label for="inV8">Nominal voltage 8&nbsp;<span class="rq">*</span></label>
+          <div class="inp"><input id="inV8" name="inV8" type="number" step="any" min="0"><span class="u">VAC</span></div>
+          <div class="err">Please fill out this box.</div>
+          <button type="button" class="btn ghost small rep-remove">Remove</button>
+        </div>
+        <div class="actions rep-actions"><button type="button" class="btn ghost small rep-add">Add another input voltage</button></div>
+      </div>
+      <!-- Frequenz in einer eigenen Zeile unter den Eingangsspannungen -->
+      <div class="f full freq-row" data-req>
+        <label for="inF">Nominal frequency&nbsp;<span class="rq">*</span></label>
+        <div class="freq-line">
+          <div class="inp"><input id="inF" name="inF" type="number" step="any" min="0"><span class="u">Hz</span></div>
+          <span class="freq-hint">typ. 50 ... 60 Hz</span>
+        </div>
+        <div class="err">Please fill out this box.</div>
+      </div>
+      <div class="f full">
+        <span class="lg">Connection</span>
+        <div class="pills">
+          <label class="pill"><input type="radio" name="inConn" value="screw" checked><span>Screw connection</span></label>
+          <label class="pill"><input type="radio" name="inConn" value="cage"><span>Cage clamp</span></label>
+          <label class="pill"><input type="radio" name="inConn" value="other"><span>Other connection</span></label>
+        </div>
+      </div>
+      <div class="f" data-show-if="inConn:other">
+        <label for="inConnO">Other connection (specify)</label>
+        <input id="inConnO" name="inConnO" type="text">
+      </div>
+      <div class="f full">
+        <label for="inNote">Notes</label>
+        <textarea id="inNote" name="inNote"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= AUSGÄNGE (4 gleiche Blöcke, 2–4 werden per Button eingeblendet) ================= -->
+  <section class="sec">
+    <div><h2>Outputs</h2><p class="desc">Up to 4 outputs</p></div>
+    <div>
+      <div class="ocard">
+        <div class="ocard-head"><strong>Output 1</strong>
+          <button type="button" class="btn ghost small remove-out">Remove</button></div>
+        <div class="grid">
+          <div class="f narrow" data-req data-nonzero>
+            <label for="o1_volt">Nominal voltage <span class="rq">*</span></label>
+            <div class="inp"><input id="o1_volt" name="o1_volt" type="number" step="any" min="0"><span class="u">VAC</span></div>
+            <div class="err">Please fill out this box.</div>
+          </div>
+          <div class="f narrow" data-req data-nonzero>
+            <label for="o1_pow">Nominal power <span class="rq">*</span></label>
+            <div class="inp"><input id="o1_pow" name="o1_pow" type="number" step="any" min="0"><span class="u">VA</span></div>
+            <div class="err">Please fill out this box.</div>
+          </div>
+          <div class="f narrow">
+            <label for="o1_curr">Nominal current</label>
+            <div class="inp"><input id="o1_curr" name="o1_curr" type="number" step="any" min="0" data-calc-current="1"><span class="u">A</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ocard">
+        <div class="ocard-head"><strong>Output 2</strong>
+          <button type="button" class="btn ghost small remove-out">Remove</button></div>
+        <div class="grid">
+          <div class="f narrow" data-req data-nonzero>
+            <label for="o2_volt">Nominal voltage <span class="rq">*</span></label>
+            <div class="inp"><input id="o2_volt" name="o2_volt" type="number" step="any" min="0"><span class="u">VAC</span></div>
+            <div class="err">Please fill out this box.</div>
+          </div>
+          <div class="f narrow" data-req data-nonzero>
+            <label for="o2_pow">Nominal power <span class="rq">*</span></label>
+            <div class="inp"><input id="o2_pow" name="o2_pow" type="number" step="any" min="0"><span class="u">VA</span></div>
+            <div class="err">Please fill out this box.</div>
+          </div>
+          <div class="f narrow">
+            <label for="o2_curr">Nominal current</label>
+            <div class="inp"><input id="o2_curr" name="o2_curr" type="number" step="any" min="0" data-calc-current="2"><span class="u">A</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ocard">
+        <div class="ocard-head"><strong>Output 3</strong>
+          <button type="button" class="btn ghost small remove-out">Remove</button></div>
+        <div class="grid">
+          <div class="f narrow" data-req data-nonzero>
+            <label for="o3_volt">Nominal voltage <span class="rq">*</span></label>
+            <div class="inp"><input id="o3_volt" name="o3_volt" type="number" step="any" min="0"><span class="u">VAC</span></div>
+            <div class="err">Please fill out this box.</div>
+          </div>
+          <div class="f narrow" data-req data-nonzero>
+            <label for="o3_pow">Nominal power <span class="rq">*</span></label>
+            <div class="inp"><input id="o3_pow" name="o3_pow" type="number" step="any" min="0"><span class="u">VA</span></div>
+            <div class="err">Please fill out this box.</div>
+          </div>
+          <div class="f narrow">
+            <label for="o3_curr">Nominal current</label>
+            <div class="inp"><input id="o3_curr" name="o3_curr" type="number" step="any" min="0" data-calc-current="3"><span class="u">A</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ocard">
+        <div class="ocard-head"><strong>Output 4</strong>
+          <button type="button" class="btn ghost small remove-out">Remove</button></div>
+        <div class="grid">
+          <div class="f narrow" data-req data-nonzero>
+            <label for="o4_volt">Nominal voltage <span class="rq">*</span></label>
+            <div class="inp"><input id="o4_volt" name="o4_volt" type="number" step="any" min="0"><span class="u">VAC</span></div>
+            <div class="err">Please fill out this box.</div>
+          </div>
+          <div class="f narrow" data-req data-nonzero>
+            <label for="o4_pow">Nominal power <span class="rq">*</span></label>
+            <div class="inp"><input id="o4_pow" name="o4_pow" type="number" step="any" min="0"><span class="u">VA</span></div>
+            <div class="err">Please fill out this box.</div>
+          </div>
+          <div class="f narrow">
+            <label for="o4_curr">Nominal current</label>
+            <div class="inp"><input id="o4_curr" name="o4_curr" type="number" step="any" min="0" data-calc-current="4"><span class="u">A</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="actions" style="margin-bottom:18px">
+        <button type="button" class="btn ghost" id="addOut">Add another output</button>
+      </div>
+      <div class="grid">
+        <!-- Anschluss gilt für alle Ausgänge -->
+        <div class="f full">
+          <span class="lg">Connection (all outputs)</span>
+          <div class="pills">
+            <label class="pill"><input type="radio" name="outConn" value="screw" checked><span>Screw connection</span></label>
+            <label class="pill"><input type="radio" name="outConn" value="cage"><span>Cage clamp</span></label>
+            <label class="pill"><input type="radio" name="outConn" value="other"><span>Other connection</span></label>
+          </div>
+        </div>
+        <div class="f" data-show-if="outConn:other">
+          <label for="outConnO">Other connection (specify)</label>
+          <input id="outConnO" name="outConnO" type="text">
+        </div>
+        <div class="f full">
+          <label for="outNote">Notes on outputs</label>
+          <textarea id="outNote" name="outNote"></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= AUFBAU ================= -->
+  <section class="sec">
+    <div><h2>Construction</h2></div>
+    <div class="grid cons">
+      <div class="f">
+        <label for="ip">IP code</label>
+        <input id="ip" name="ip" type="text" placeholder="IP20">
+      </div>
+      <div class="f">
+        <label for="ins">Insulation class</label>
+        <select id="ins" name="ins">
+          <option value=""></option>
+          <option>A (105 °C)</option>
+          <option>E (120 °C)</option>
+          <option>B (130 °C)</option>
+          <option>F (155 °C)</option>
+          <option>H (180 °C)</option>
+        </select>
+      </div>
+      <!-- Doppel-Schieberegler: data-dual-slider="Feld min,Feld max"  data-range="min,max,schritt"  data-split="0" = min. höchstens 0, max. mindestens 0 -->
+      <div class="f span2" data-pair>
+        <label for="ambMin">Ambient temperature</label>
+        <div class="pair">
+          <div class="inp slim"><input id="ambMin" name="ambMin" type="number" step="any" min="-40" max="0" placeholder="min." value="0"><span class="u">°C</span></div>
+          <span class="pair-sep">to</span>
+          <div class="inp slim"><input id="ambMax" name="ambMax" type="number" step="any" min="0" max="80" placeholder="max." value="40"><span class="u">°C</span></div>
+        </div>
+        <div data-dual-slider="ambMin,ambMax" data-range="-40,80,1" data-split="0" data-ticks="-40,-20,0,20,40,60,80"></div>
+      </div>
+      <div class="f full">
+        <span class="lg">Mounting</span>
+        <div class="pills">
+          <label class="pill"><input type="checkbox" name="mount" value="din"><span>Snap on DIN rail</span></label>
+        </div>
+      </div>
+      <div class="f full">
+        <label for="conNote">Notes</label>
+        <textarea id="conNote" name="conNote"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ABMESSUNGEN ================= -->
+  <section class="sec">
+    <div><h2>Dimensions</h2><p class="desc">Only if special needed. Please enter maximum values.</p></div>
+    <div class="grid dims">
+      <div class="f"><label for="dH">Height H</label><div class="inp"><input id="dH" name="dH" type="number" step="any"><span class="u">mm</span></div></div>
+      <div class="f"><label for="dW">Width W</label><div class="inp"><input id="dW" name="dW" type="number" step="any"><span class="u">mm</span></div></div>
+      <div class="f"><label for="dD">Depth D</label><div class="inp"><input id="dD" name="dD" type="number" step="any"><span class="u">mm</span></div></div>
+    </div>
+  </section>
+
+  <!-- ================= ANTRAGSTELLER ================= -->
+  <section class="sec">
+    <div><h2>Applicant</h2></div>
+    <div class="grid appl">
+      <div class="f" data-req>
+        <label for="appl">Name <span class="rq">*</span></label>
+        <input id="appl" name="appl" type="text">
+        <div class="err">Please fill out this box.</div>
+      </div>
+      <div class="f"><label for="date">Date of inquiry</label><input id="date" name="date" type="date"></div>
+    </div>
+  </section>
+
+</form>
+
+<!-- ================= ABSENDEN: PDF speichern, dann per E-Mail schicken ================= -->
+<div class="send">
+  <ol class="steps">
+    <li>
+      <strong>Save the data sheet as PDF</strong>
+      <span>In the print window, choose "Save as PDF" as printer.</span>
+      <button class="btn primary" id="print" type="button">Save as PDF</button>
+    </li>
+    <li>
+      <strong>Send it to us by e-mail</strong>
+      <span>An e-mail opens with the subject already filled in. Please attach the PDF and add your message.</span>
+      <button class="btn primary" id="mail" type="button">Open e-mail</button>
+    </li>
+  </ol>
+  <p class="send-err" id="sendErr" hidden>Please fill out all boxes marked with *.</p>
+</div>
+</main>
+
+<!-- Druckansicht: wird beim Drucken automatisch aus den Eingaben erzeugt (script.js) -->
+<div id="printView"></div>
+
+<script>
+/* =========================================================
+   EINSTELLUNGEN – hier anpassen
+   ========================================================= */
+const EMPFAENGER = "ihre-adresse@beispiel.de";   // an diese Adresse schickt der Kunde das PDF
+const BETREFF    = "Inquiry";                    // Anfang des Betreffs
+
+/* Vorschlag für den Mail-Text – der Kunde kann ihn ändern und ergänzen */
+function mailText(nummer) {
+  return "Dear Sir or Madam,\n\n" +
+         "please find attached our inquiry for a customized transformer (project no. " + nummer + ").\n\n" +
+         "\n\nBest regards\n";
+}
+
+/* Meldungen (englisch) */
+const MELDUNG = {
+  nr: "Project no."
+};
+
+
+/* =========================================================
+   GRUNDLAGEN
+   ========================================================= */
+const form = document.getElementById("form");
+const params = new URLSearchParams(location.search);
+// Projekt-Nr.: aus dem Link (?nr=1042), sonst automatisch erzeugt
+// Format: JJMMTT-XXX, z. B. 261005-K7Q (Datum + 3 Zufallszeichen)
+const ZUFALLS_LAENGE = 3;
+function neueNummer() {
+  const d = new Date();
+  const zwei = n => String(n).padStart(2, "0");
+  const zeichen = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // ohne leicht verwechselbare Zeichen wie O/0, I/1
+  let zufall = "";
+  for (let i = 0; i < ZUFALLS_LAENGE; i++) zufall += zeichen[Math.floor(Math.random() * zeichen.length)];
+  return zwei(d.getFullYear() % 100) + zwei(d.getMonth() + 1) + zwei(d.getDate()) + "-" + zufall;
+}
+const nr = (params.get("nr") || "").trim() || neueNummer();
+const jahr = new Date().getFullYear();
+
+// Projekt-Nr. im Kopf anzeigen
+document.getElementById("refVal").textContent = nr || "–";
+
+// Jahreszahlen eintragen (data-year="1" = nächstes Jahr, "-2" = vor zwei Jahren)
+document.querySelectorAll("[data-year]").forEach(el => {
+  el.textContent = jahr + Number(el.dataset.year);
+});
+
+// Datum als JJJJ-MM-TT (Format der Datumsfelder)
+function datumText(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+// Heutiges Datum vorbelegen
+const heute = new Date();
+document.getElementById("date").value = datumText(heute);
+
+// Gewünschtes Lieferdatum: standardmäßig 6 Wochen (42 Tage) später
+const LIEFER_WOCHEN = 6;
+const lieferdatum = new Date(heute);
+lieferdatum.setDate(lieferdatum.getDate() + LIEFER_WOCHEN * 7);
+document.getElementById("delivery").value = datumText(lieferdatum);
+
+// Text eines Elements lesen – ohne Stern, Einheit und Fehlermeldung
+function text(el) {
+  const kopie = el.cloneNode(true);
+  kopie.querySelectorAll(".rq, .err, .u, .lg-short").forEach(x => x.remove()); // kurze Beschriftungen nie in Mail/Datenblatt
+  return kopie.textContent.replace(/\s+/g, " ").trim();
+}
+
+
+/* =========================================================
+   FELDER EIN-/AUSBLENDEN (data-show-if="name:wert") – für Auswahlknöpfe und Dropdowns
+   ========================================================= */
+function pruefeBedingungen() {
+  document.querySelectorAll("[data-show-if]").forEach(feld => {
+    const [name, wert] = feld.dataset.showIf.split(":");
+    const elemente = [...form.querySelectorAll(`[name="${name}"]`)];
+    // Auswahlknöpfe: angehakt mit diesem Wert / Dropdown und Textfeld: dieser Wert ausgewählt
+    let passt = elemente.some(i =>
+      (i.type === "radio" || i.type === "checkbox") ? (i.checked && i.value === wert) : i.value === wert);
+    // ist das steuernde Feld selbst ausgeblendet, bleibt auch dieses Feld ausgeblendet
+    if (elemente.length && elemente[0].closest("[hidden]")) passt = false;
+    feld.hidden = !passt;
+  });
+  // Felder, die nur bei einer Zahl unter einer Grenze erscheinen (data-show-if-below="name:grenze")
+  document.querySelectorAll("[data-show-if-below]").forEach(feld => {
+    const [name, grenze] = feld.dataset.showIfBelow.split(":");
+    const wert = parseFloat(document.getElementById(name).value);
+    feld.hidden = !(wert < Number(grenze));
+  });
+}
+form.addEventListener("change", pruefeBedingungen);
+form.addEventListener("input", pruefeBedingungen);
+pruefeBedingungen();
+
+
+/* =========================================================
+   AUSGÄNGE 1–4
+   ========================================================= */
+const ausgaenge = [...document.querySelectorAll(".ocard")];
+let anzahlAusgaenge = 1;
+
+function zeigeAusgaenge() {
+  ausgaenge.forEach((karte, i) => {
+    karte.hidden = i >= anzahlAusgaenge;
+    // "Entfernen" nur beim letzten sichtbaren Ausgang (nicht bei Ausgang 1)
+    karte.querySelector(".remove-out").hidden = !(i === anzahlAusgaenge - 1 && i > 0);
+  });
+  document.getElementById("addOut").hidden = anzahlAusgaenge >= ausgaenge.length;
+}
+
+document.getElementById("addOut").addEventListener("click", () => {
+  anzahlAusgaenge++;
+  zeigeAusgaenge();
+});
+
+ausgaenge.forEach(karte => {
+  karte.querySelector(".remove-out").addEventListener("click", () => {
+    // Eingaben des Ausgangs leeren
+    karte.querySelectorAll("input").forEach(i => {
+      if (i.type === "checkbox" || i.type === "radio") i.checked = false; else i.value = "";
+    });
+    anzahlAusgaenge--;
+    zeigeAusgaenge();
+    pruefeBedingungen();
+    aktualisiereRegler();
+  });
+});
+zeigeAusgaenge();
+
+
+/* =========================================================
+   SCHIEBEREGLER
+   Jedes Zahlenfeld mit data-slider="min,max,schritt" bekommt einen Regler.
+   data-ticks="0,100,200" legt die Zahlen der Skala fest.
+   ========================================================= */
+// Breite des Reglergriffs in Pixeln (für die Skala) – auf Touch-Geräten sind die Griffe größer
+const DAUMEN_BREITE = window.matchMedia("(pointer: coarse)").matches ? 24 : 16;
+
+document.querySelectorAll("[data-slider]").forEach(zahl => {
+  const [min, max, schritt] = zahl.dataset.slider.split(",").map(Number);
+  const ticks = (zahl.dataset.ticks || "").split(",").filter(Boolean).map(Number);
+
+  // Regler-Bausteine erzeugen
+  const kasten = document.createElement("div");
+  kasten.className = "slider unset";
+  kasten.innerHTML = `
+    <button type="button" class="arr" data-dir="-1" aria-label="−"></button>
+    <div class="rail">
+      <input type="range" min="${min}" max="${max}" step="${schritt}" value="${min}">
+      <div class="ticks"></div>
+    </div>
+    <button type="button" class="arr" data-dir="1" aria-label="+"></button>`;
+  // Zahlenfeld und Regler nebeneinander in eine Zeile setzen
+  const zeile = document.createElement("div");
+  zeile.className = "slider-row";
+  const feld = zahl.closest(".inp");
+  feld.before(zeile);
+  zeile.append(feld, kasten);
+
+  // Skala zeichnen
+  ticks.forEach(t => {
+    const anteil = (t - min) / (max - min);
+    const s = document.createElement("span");
+    s.textContent = t;
+    s.style.left = `calc(${anteil * 100}% + ${(0.5 - anteil) * DAUMEN_BREITE}px)`;
+    kasten.querySelector(".ticks").append(s);
+  });
+
+  const regler = kasten.querySelector("input[type=range]");
+  // Startwert: 0, wenn 0 im Bereich liegt (z. B. bei Temperaturen), sonst das Minimum
+  const start = (min <= 0 && max >= 0) ? 0 : min;
+  regler.value = start;
+  zahl._regler = { kasten, regler, min, max, start };
+
+  // Regler bewegt → Zahl eintragen
+  regler.addEventListener("input", () => {
+    zahl.value = regler.value;
+    aktualisiereRegler();
+  });
+  // Zahl getippt → Regler folgt
+  zahl.addEventListener("input", aktualisiereRegler);
+
+  // Pfeile: klicken = ±1 Schritt, gedrückt halten = schnell weiter
+  kasten.querySelectorAll(".arr").forEach(pfeil => {
+    let warte, wiederhole;
+    const schrittMachen = () => {
+      const alt = parseFloat(zahl.value);
+      const basis = isNaN(alt) ? start : alt;
+      const neu = basis + Number(pfeil.dataset.dir) * schritt;
+      zahl.value = Math.min(Math.max(Math.round(neu * 100) / 100, min), max);
+      aktualisiereRegler();
+    };
+    const stopp = () => { clearTimeout(warte); clearInterval(wiederhole); };
+    pfeil.addEventListener("pointerdown", () => {
+      schrittMachen();
+      warte = setTimeout(() => { wiederhole = setInterval(schrittMachen, 60); }, 400);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(e => pfeil.addEventListener(e, stopp));
+    pfeil.addEventListener("click", e => { if (e.detail === 0) schrittMachen(); }); // Tastatur
+  });
+});
+
+// Alle Regler an die Zahlenfelder anpassen. Grau = noch kein Wert gesetzt.
+function aktualisiereRegler() {
+  document.querySelectorAll("[data-slider]").forEach(zahl => {
+    const { kasten, regler, min, max, start } = zahl._regler;
+    const wert = parseFloat(zahl.value);
+    kasten.classList.toggle("unset", isNaN(wert));
+    regler.value = isNaN(wert) ? start : Math.min(Math.max(wert, min), max);
+  });
+}
+
+
+/* =========================================================
+   WIEDERHOLBARE FELDER (data-repeat)
+   Enthält mehrere .rep-item – das erste ist sichtbar, weitere kommen per .rep-add dazu.
+   ========================================================= */
+document.querySelectorAll("[data-repeat]").forEach(gruppe => {
+  const teile = [...gruppe.querySelectorAll(".rep-item")];
+  const hinzu = gruppe.querySelector(".rep-add");
+  let anzahl = 1;
+
+  function zeigen() {
+    teile.forEach((teil, i) => {
+      teil.hidden = i >= anzahl;
+      const weg = teil.querySelector(".rep-remove");
+      if (weg) weg.hidden = !(i === anzahl - 1 && i > 0); // nur beim letzten sichtbaren
+    });
+    hinzu.hidden = anzahl >= teile.length;
+  }
+
+  hinzu.addEventListener("click", () => { anzahl++; zeigen(); });
+  teile.forEach(teil => {
+    const weg = teil.querySelector(".rep-remove");
+    if (!weg) return;
+    weg.addEventListener("click", () => {
+      teil.querySelectorAll("input:not([type=range])").forEach(i => i.value = "");
+      anzahl--;
+      zeigen();
+      aktualisiereRegler();
+    });
+  });
+  zeigen();
+});
+
+
+/* =========================================================
+   DOPPEL-SCHIEBEREGLER (min. und max. auf einem Strahl)
+   <div data-dual-slider="feldMin,feldMax" data-range="min,max,schritt" data-ticks="...">
+   Die Pfeile bewegen den zuletzt angefassten Griff.
+   ========================================================= */
+document.querySelectorAll("[data-dual-slider]").forEach(platz => {
+  const [idMin, idMax] = platz.dataset.dualSlider.split(",");
+  const zMin = document.getElementById(idMin);
+  const zMax = document.getElementById(idMax);
+  const [min, max, schritt] = platz.dataset.range.split(",").map(Number);
+  const ticks = (platz.dataset.ticks || "").split(",").filter(Boolean).map(Number);
+  const start = (min <= 0 && max >= 0) ? 0 : min;
+  // Trennwert (data-split): min.-Griff höchstens bis hier, max.-Griff mindestens ab hier
+  const grenze = platz.dataset.split !== undefined ? Number(platz.dataset.split) : null;
+  const begrenzeMin = v => grenze === null ? v : Math.min(v, grenze);
+  const begrenzeMax = v => grenze === null ? v : Math.max(v, grenze);
+  const position = wert => {
+    const anteil = (wert - min) / (max - min);
+    return `calc(${anteil * 100}% + ${(0.5 - anteil) * DAUMEN_BREITE}px)`;
+  };
+
+  platz.className = "slider dual";
+  platz.innerHTML = `
+    <button type="button" class="arr" data-dir="-1" aria-label="−"></button>
+    <div class="rail">
+      <div class="dual-wrap">
+        <div class="dual-fill"></div>
+        <span class="dual-tag dual-tag-min">min</span>
+        <span class="dual-tag dual-tag-max">max</span>
+        <input type="range" min="${min}" max="${max}" step="${schritt}" aria-label="min.">
+        <input type="range" min="${min}" max="${max}" step="${schritt}" aria-label="max.">
+      </div>
+      <div class="ticks"></div>
+    </div>
+    <button type="button" class="arr" data-dir="1" aria-label="+"></button>`;
+
+  ticks.forEach(t => {
+    const s = document.createElement("span");
+    s.textContent = t;
+    s.style.left = position(t);
+    platz.querySelector(".ticks").append(s);
+  });
+
+  const [rMin, rMax] = platz.querySelectorAll("input[type=range]");
+  const fuellung = platz.querySelector(".dual-fill");
+  const tagMin = platz.querySelector(".dual-tag-min"), tagMax = platz.querySelector(".dual-tag-max");
+  const wrap = platz.querySelector(".dual-wrap");
+  let aktiv = rMin; // zuletzt angefasster Griff
+
+  // Griffe, Füllung und Farbe an die Zahlenfelder anpassen
+  function abgleichen() {
+    const vMin = parseFloat(zMin.value), vMax = parseFloat(zMax.value);
+    rMin.value = isNaN(vMin) ? min : Math.min(Math.max(vMin, min), max);
+    rMax.value = isNaN(vMax) ? max : Math.min(Math.max(vMax, min), max);
+    rMin.classList.toggle("leer", isNaN(vMin));
+    rMax.classList.toggle("leer", isNaN(vMax));
+    // grüner Bereich zwischen den Griffen, sobald ein Wert gesetzt ist
+    fuellung.hidden = isNaN(vMin) && isNaN(vMax);
+    fuellung.style.left = position(+rMin.value);
+    fuellung.style.width = `calc(${position(+rMax.value)} - ${position(+rMin.value)})`;
+    // Beschriftung „min" und „max" mittig über den Griffen; liegen die Griffe sehr nah beieinander,
+    // rücken die beiden Beschriftungen gerade so weit auseinander, dass sie sich nicht überdecken
+    tagMin.style.left = position(+rMin.value);
+    tagMax.style.left = position(+rMax.value);
+    const abstandPx = (+rMax.value - +rMin.value) / (max - min) * (wrap.clientWidth - DAUMEN_BREITE);
+    const brauchtPx = (tagMin.offsetWidth + tagMax.offsetWidth) / 2 + 4;
+    const versatz = Math.max(0, (brauchtPx - abstandPx) / 2);
+    tagMin.style.setProperty("--v", versatz + "px");
+    tagMax.style.setProperty("--v", versatz + "px");
+    // liegen die Griffe übereinander, muss der passende oben liegen
+    rMin.style.zIndex = +rMin.value > (min + max) / 2 ? 3 : 1;
+    rMax.style.zIndex = 2;
+  }
+
+  // Griff bewegt → Zahl eintragen (min. nie größer als max.)
+  rMin.addEventListener("input", () => {
+    zMin.value = begrenzeMin(Math.min(+rMin.value, +rMax.value));
+    aktiv = rMin; abgleichen();
+  });
+  rMax.addEventListener("input", () => {
+    zMax.value = begrenzeMax(Math.max(+rMax.value, +rMin.value));
+    aktiv = rMax; abgleichen();
+  });
+  [rMin, rMax].forEach(r => r.addEventListener("pointerdown", () => { aktiv = r; }));
+  zMin.addEventListener("focus", () => { aktiv = rMin; });
+  zMax.addEventListener("focus", () => { aktiv = rMax; });
+  zMin.addEventListener("input", abgleichen);
+  zMax.addEventListener("input", abgleichen);
+  // getippte Werte nach dem Verlassen des Feldes in den erlaubten Bereich setzen
+  zMin.addEventListener("change", () => {
+    const v = parseFloat(zMin.value);
+    if (!isNaN(v)) zMin.value = begrenzeMin(Math.min(Math.max(v, min), max));
+    abgleichen();
+  });
+  zMax.addEventListener("change", () => {
+    const v = parseFloat(zMax.value);
+    if (!isNaN(v)) zMax.value = begrenzeMax(Math.min(Math.max(v, min), max));
+    abgleichen();
+  });
+
+  // Pfeile
+  platz.querySelectorAll(".arr").forEach(pfeil => {
+    let warte, wiederhole;
+    const schrittMachen = () => {
+      const istMin = aktiv === rMin;
+      const zahl = istMin ? zMin : zMax;
+      const alt = parseFloat(zahl.value);
+      let neu = (isNaN(alt) ? start : alt) + Number(pfeil.dataset.dir) * schritt;
+      neu = Math.round(neu * 100) / 100;
+      neu = istMin ? begrenzeMin(Math.min(neu, +rMax.value)) : begrenzeMax(Math.max(neu, +rMin.value));
+      zahl.value = Math.min(Math.max(neu, min), max);
+      abgleichen();
+    };
+    const stopp = () => { clearTimeout(warte); clearInterval(wiederhole); };
+    pfeil.addEventListener("pointerdown", () => {
+      schrittMachen();
+      warte = setTimeout(() => { wiederhole = setInterval(schrittMachen, 60); }, 400);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(e => pfeil.addEventListener(e, stopp));
+    pfeil.addEventListener("click", e => { if (e.detail === 0) schrittMachen(); });
+  });
+
+  abgleichen();
+  window.addEventListener("resize", abgleichen); // Abstand der Beschriftungen bei neuer Breite neu berechnen
+});
+
+
+/* =========================================================
+   KEINE MINUSWERTE
+   Alle Zahlenfelder mit min="0" (Spannungen, Leistungen, Mengen, Maße)
+   ========================================================= */
+// Minus- und e-Taste in diesen Feldern sperren
+form.addEventListener("keydown", e => {
+  const t = e.target;
+  if (t.type === "number" && t.min === "0" && (e.key === "-" || e.key === "e" || e.key === "E")) e.preventDefault();
+});
+// eingefügte oder anders entstandene Minuswerte korrigieren
+function keineMinuswerte() {
+  form.querySelectorAll('input[type=number][min="0"]').forEach(t => {
+    const v = parseFloat(t.value);
+    if (!isNaN(v) && v < 0) t.value = String(Math.abs(v));
+  });
+}
+form.addEventListener("input", keineMinuswerte);
+form.addEventListener("change", keineMinuswerte);
+
+
+/* =========================================================
+   NENNSTROM BERECHNEN (Ausgänge) – wird nur als Hinweis angezeigt, nicht eingetragen
+   1-phasig:  I = S / U
+   3-phasig:  I = S / (√3 · U)
+   S = Nennleistung in VA, U = Nennspannung in V
+   ========================================================= */
+function berechneStroeme() {
+  const dreiphasig = !!form.querySelector('[name="phases"][value="3"]:checked');
+  document.querySelectorAll("[data-calc-current]").forEach(feld => {
+    const nr = feld.dataset.calcCurrent;
+    const leistung = parseFloat(document.getElementById("o" + nr + "_pow").value);
+    const spannung = parseFloat(document.getElementById("o" + nr + "_volt").value);
+    if (isNaN(leistung) || isNaN(spannung) || spannung <= 0 || leistung < 0) { feld.placeholder = ""; return; }
+    const strom = dreiphasig ? leistung / (Math.sqrt(3) * spannung) : leistung / spannung;
+    // berechneter Wert erscheint nur blass im leeren Feld – der Kunde kann selbst einen Wert eintragen
+    feld.placeholder = String(Math.round(strom * 100) / 100);
+  });
+}
+form.addEventListener("input", berechneStroeme);
+form.addEventListener("change", berechneStroeme);
+form.addEventListener("click", () => setTimeout(berechneStroeme, 0)); // Pfeile der Regler
+berechneStroeme();
+
+
+/* =========================================================
+   WERTE AUSLESEN UND E-MAIL-TEXT BAUEN
+   ========================================================= */
+
+// Wert eines Feldes (.f) als Text, leer wenn nichts ausgefüllt
+function wertVon(feld) {
+  const eingaben = [...feld.querySelectorAll("[name]")];
+  if (!eingaben.length) return "";
+  // Feldpaar min./max. (data-pair)
+  if (feld.hasAttribute("data-pair")) {
+    const a = eingaben[0].value.trim(), b = eingaben[1].value.trim();
+    if (a && b) return a + " to " + b;
+    if (a) return "min. " + a;
+    if (b) return "max. " + b;
+    return "";
+  }
+  const typ = eingaben[0].type;
+  if (typ === "radio" || typ === "checkbox") {
+    return eingaben.filter(i => i.checked).map(i => text(i.nextElementSibling)).join(", ");
+  }
+  return eingaben[0].value.trim();
+}
+
+// Zeilen "Bezeichnung [Einheit]: Wert" für eine Liste von Feldern
+function zeilen(felder) {
+  // Felder mit data-move-after="id" kommen in der Auflistung direkt hinter das genannte Feld
+  felder = [...felder];
+  felder.filter(f => f.dataset.moveAfter).forEach(f => {
+    const ziel = document.getElementById(f.dataset.moveAfter)?.closest(".f");
+    if (!ziel || !felder.includes(ziel)) return;
+    felder.splice(felder.indexOf(f), 1);
+    felder.splice(felder.indexOf(ziel) + 1, 0, f);
+  });
+  const ergebnis = [];
+  felder.forEach(feld => {
+    if (feld.closest("[hidden]")) return;           // ausgeblendete Felder überspringen
+    const wert = wertVon(feld);
+    if (!wert) return;                                // leere Felder überspringen
+    let bezeichnung = text(feld.querySelector("label, .lg"));
+    const einheit = feld.querySelector(".u");
+    if (einheit) bezeichnung += " [" + text(einheit) + "]";
+    ergebnis.push(bezeichnung + ": " + wert);
+  });
+  return ergebnis;
+}
+
+function bauMail() {
+  const m = MELDUNG;
+  const textZeilen = [m.nr + ": " + (nr || "-"), ""];
+
+  document.querySelectorAll(".sec").forEach(abschnitt => {
+    const block = [];
+
+    // Ausgänge mit eigener Überschrift
+    abschnitt.querySelectorAll(".ocard").forEach(karte => {
+      if (karte.hidden) return;
+      const z = zeilen(karte.querySelectorAll(".f"));
+      if (z.length) block.push(text(karte.querySelector("strong")) + ":", ...z.map(x => "  " + x));
+    });
+
+    // alle übrigen Felder des Abschnitts
+    const felder = [...abschnitt.querySelectorAll(".f")].filter(f => !f.closest(".ocard"));
+    block.push(...zeilen(felder));
+
+    if (block.length) textZeilen.push("== " + text(abschnitt.querySelector("h2")) + " ==", ...block, "");
+  });
+
+  const kunde = document.getElementById("cust").value.trim() || document.getElementById("appl").value.trim();
+  const betreff = BETREFF + (nr ? " – " + nr : "") + (kunde ? " – " + kunde : "");
+  return { betreff, inhalt: textZeilen.join("\n").trim() };
+}
+
+// Prüfregeln für ein Feld:
+//  data-req      = muss ausgefüllt sein
+//  data-nonzero  = darf nicht 0 sein (Spannungen, Leistungen)
+// Gibt "" zurück, wenn alles passt, sonst den Fehlertext.
+function fehlerVon(feld) {
+  const wert = wertVon(feld);
+  if (feld.hasAttribute("data-req") && wert === "") return "Please fill out this box.";
+  if (feld.hasAttribute("data-nonzero") && wert !== "" && parseFloat(wert) === 0) return "Please enter a value greater than 0.";
+  return "";
+}
+
+// Alle Pflicht- und Nicht-null-Felder prüfen und rot markieren
+function pruefePflicht() {
+  let erstes = null;
+  document.querySelectorAll(".f[data-req], .f[data-nonzero]").forEach(feld => {
+    if (feld.closest("[hidden]")) { feld.classList.remove("invalid"); return; } // ausgeblendete Felder nicht prüfen
+    const fehler = fehlerVon(feld);
+    feld.classList.toggle("invalid", fehler !== "");
+    const meldung = feld.querySelector(".err");
+    if (fehler && meldung) meldung.textContent = fehler;
+    if (fehler && !erstes) erstes = feld;
+  });
+  document.getElementById("sendErr").hidden = !erstes;
+  if (erstes) erstes.scrollIntoView({ behavior: "smooth", block: "center" });
+  return !erstes;
+}
+
+// Sobald ein rot markiertes Feld korrekt ausgefüllt ist, verschwindet die Markierung
+function entferneMarkierung() {
+  document.querySelectorAll(".f.invalid").forEach(feld => {
+    if (fehlerVon(feld) === "") feld.classList.remove("invalid");
+  });
+  if (!document.querySelector(".f.invalid")) document.getElementById("sendErr").hidden = true;
+}
+form.addEventListener("input", entferneMarkierung);
+form.addEventListener("change", entferneMarkierung);
+form.addEventListener("click", () => setTimeout(entferneMarkierung, 0)); // Pfeile der Regler
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+// Schritt 2: E-Mail öffnen – Betreff und Text vorbelegt, PDF hängt der Kunde selbst an
+function mailLink() {
+  const kunde = document.getElementById("cust").value.trim();
+  const betreff = BETREFF + " – " + nr + (kunde ? " – " + kunde : "");
+  return "mailto:" + EMPFAENGER + "?subject=" + encodeURIComponent(betreff) + "&body=" + encodeURIComponent(mailText(nr));
+}
+document.getElementById("mail").addEventListener("click", () => {
+  if (!pruefePflicht()) return;
+  location.href = mailLink();
+});
+
+/* =========================================================
+   DRUCKANSICHT
+   Beim Drucken wird statt des Formulars eine kompakte Auflistung
+   aller ausgefüllten Angaben gedruckt.
+   ========================================================= */
+function esc(t) {
+  return String(t).replace(/[&<>"]/g, z => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[z]));
+}
+
+// Zeile "Bezeichnung [Einheit]: Wert" in [Bezeichnung, "Wert Einheit"] zerlegen
+function teileZeile(zeile) {
+  const pos = zeile.indexOf(": ");
+  let bezeichnung = zeile.slice(0, pos), wert = zeile.slice(pos + 2);
+  const einheit = bezeichnung.match(/ \[(.+)\]$/);
+  if (einheit) { bezeichnung = bezeichnung.replace(/ \[.+\]$/, ""); wert += " " + einheit[1]; }
+  return [bezeichnung, wert];
+}
+
+function bauDruckansicht() {
+  const heute = document.getElementById("date").value || "";
+  let bloecke = "";
+
+  document.querySelectorAll(".sec").forEach(abschnitt => {
+    const titel = esc(text(abschnitt.querySelector("h2")));
+    let tabelle = "";
+    let breit = false;
+
+    // Ausgänge als Tabelle: Zeilen = Output 1, 2, ... / Spalten = Kennwerte (Spannung, Leistung, Strom)
+    const karten = [...abschnitt.querySelectorAll(".ocard")].filter(k => !k.hidden);
+    if (karten.length) {
+      breit = true;
+      const spalten = karten.map(k => {
+        const werte = {};
+        zeilen(k.querySelectorAll(".f")).forEach(z => { const [b, w] = teileZeile(z); werte[b] = w; });
+        return { name: text(k.querySelector("strong")), werte };
+      });
+      const kennwerte = [];
+      spalten.forEach(sp => Object.keys(sp.werte).forEach(b => { if (!kennwerte.includes(b)) kennwerte.push(b); }));
+      if (kennwerte.length) {
+        // eine Zeile pro Ausgang, eine Spalte pro Kennwert
+        tabelle += `<table class="pv pv-matrix"><tr><th></th>${kennwerte.map(b => `<th>${esc(b)}</th>`).join("")}</tr>` +
+          spalten.map(sp => `<tr><td class="pv-l">${esc(sp.name)}</td>${kennwerte.map(b => `<td>${esc(sp.werte[b] || "–")}</td>`).join("")}</tr>`).join("") +
+          `</table>`;
+      }
+    }
+
+    // übrige Felder als zweispaltige Tabelle
+    const felder = [...abschnitt.querySelectorAll(".f")].filter(f => !f.closest(".ocard"));
+    const rest = zeilen(felder).map(teileZeile);
+    if (rest.length) {
+      tabelle += `<table class="pv">` +
+        rest.map(([b, w]) => `<tr><td class="pv-l">${esc(b)}</td><td>${esc(w)}</td></tr>`).join("") +
+        `</table>`;
+    }
+
+    if (tabelle) bloecke += `<section class="pv-sec${breit ? " pv-wide" : ""}"><h2>${titel}</h2>${tabelle}</section>`;
+  });
+
+  document.getElementById("printView").innerHTML = `
+    <div class="pv-band">
+      <div>
+        <div class="pv-kicker">Inquiry data sheet</div>
+        <div class="pv-title">${esc(text(document.querySelector("h1")))}</div>
+      </div>
+      <div class="pv-ref">
+        <div><span>${esc(MELDUNG.nr)}</span> <strong>${esc(nr || "–")}</strong></div>
+        ${heute ? `<div><span>Date</span> <strong>${esc(heute)}</strong></div>` : ""}
+      </div>
+    </div>
+    <div class="pv-body">${bloecke}</div>
+    <div class="pv-foot">Generated from the online inquiry form · ${esc(MELDUNG.nr)} ${esc(nr || "–")}</div>`;
+}
+
+// auch bei Strg+P bzw. Drucken über das Browsermenü
+window.addEventListener("beforeprint", bauDruckansicht);
+
+// Als PDF drucken
+// Schritt 1: Datenblatt als PDF speichern (Pflichtfelder werden vorher geprüft)
+document.getElementById("print").addEventListener("click", () => {
+  if (!pruefePflicht()) return;
+  bauDruckansicht();
+  window.print();
+});
+</script>
+</body>
+</html>
