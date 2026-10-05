@@ -578,7 +578,6 @@ function teileZeile(zeile) {
   return [bezeichnung, wert];
 }
 
-const seitentitel = document.title;
 function druckDateiname() {
   const datum = document.getElementById("date").value || datumText(new Date());
   const kunde = document.getElementById("cust").value.trim() || "Customer";
@@ -587,8 +586,17 @@ function druckDateiname() {
     .join("_");
 }
 
-function bauDruckansicht() {
+function aktualisiereDrucktitel() {
   document.title = druckDateiname();
+}
+["date", "cust"].forEach(id => {
+  document.getElementById(id).addEventListener("input", aktualisiereDrucktitel);
+  document.getElementById(id).addEventListener("change", aktualisiereDrucktitel);
+});
+aktualisiereDrucktitel();
+
+function bauDruckansicht() {
+  aktualisiereDrucktitel();
   const heute = document.getElementById("date").value || "";
   let bloecke = "";
 
@@ -645,7 +653,6 @@ function bauDruckansicht() {
 
 // auch bei Strg+P bzw. Drucken über das Browsermenü
 window.addEventListener("beforeprint", bauDruckansicht);
-window.addEventListener("afterprint", () => { document.title = seitentitel; });
 
 // Als PDF drucken
 // Schritt 1: Datenblatt als PDF speichern (Pflichtfelder werden vorher geprüft)
