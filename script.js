@@ -579,11 +579,7 @@ function teileZeile(zeile) {
 }
 
 function druckDateiname() {
-  const datum = document.getElementById("date").value || datumText(new Date());
-  const kunde = document.getElementById("cust").value.trim() || "Customer";
-  return [datum, nr, kunde]
-    .map(teil => teil.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").replace(/[. ]+$/g, ""))
-    .join("_");
+  return nr;
 }
 
 function aktualisiereDrucktitel() {
