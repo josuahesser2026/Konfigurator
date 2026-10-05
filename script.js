@@ -579,7 +579,7 @@ function teileZeile(zeile) {
 }
 
 function druckDateiname() {
-  return nr.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").replace(/[. ]+$/g, "");
+  return "Project no.";
 }
 
 function aktualisiereDrucktitel() {
