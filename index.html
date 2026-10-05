@@ -735,6 +735,7 @@ body.locked > header, body.locked > main, body.locked > #printView { visibility:
       <strong>Save the data sheet as PDF</strong>
       <span>In the print window, choose "Save as PDF" as printer.</span>
       <button class="btn primary" id="print" type="button">Save as PDF</button>
+      <span>Suggested file name: <span id="fileNameHint"></span>.pdf</span>
     </li>
     <li>
       <strong>Send it to us by e-mail</strong>
@@ -1337,7 +1338,10 @@ function druckDateiname() {
 }
 
 function aktualisiereDrucktitel() {
-  document.title = druckDateiname();
+  const dateiname = druckDateiname();
+  document.title = dateiname;
+  const hinweis = document.getElementById("fileNameHint");
+  if (hinweis) hinweis.textContent = dateiname;
 }
 ["date", "cust"].forEach(id => {
   document.getElementById(id).addEventListener("input", aktualisiereDrucktitel);
