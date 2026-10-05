@@ -1,7 +1,7 @@
 /* =========================================================
    EINSTELLUNGEN – hier anpassen
    ========================================================= */
-const EMPFAENGER = "ihre-adresse@beispiel.de";   // an diese Adresse schickt der Kunde das PDF
+const EMPFAENGER = "josua.hesser.mail@gmail.com";   // an diese Adresse schickt der Kunde das PDF
 const BETREFF    = "Inquiry";                    // Anfang des Betreffs
 
 /* Vorschlag für den Mail-Text – der Kunde kann ihn ändern und ergänzen */
