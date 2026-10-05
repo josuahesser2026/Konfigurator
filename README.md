@@ -1,6 +1,6 @@
 # Konfigurator
 
-Konfigurator Transformer.
+Transformer Configurator.
 
 Website: https://josuahesser2026.github.io/Konfigurator/
 
