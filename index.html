@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Inquiry: customized transformer</title>
+<title>Konfigurator Transformer</title>
 <style>
 /* Gestaltung des Anfrageformulars – hier Farben, Abstände und Schriften anpassen */
 
@@ -343,9 +343,32 @@ select { height:46px; }
 .dual-tag { position:absolute; top:-19px; font-size:.7rem; font-weight:700; line-height:1; color:var(--primary); pointer-events:none; white-space:nowrap; }
 .dual-tag-min { transform:translateX(calc(-50% - var(--v, 0px))); }
 .dual-tag-max { transform:translateX(calc(-50% + var(--v, 0px))); }
+
+/* Einfacher Sichtschutz; kein serverseitiger Passwortschutz */
+body.locked > header, body.locked > main, body.locked > #printView { visibility:hidden; }
+#passwordGate { position:fixed; z-index:1000; inset:0; display:grid; place-items:center; padding:20px; background:var(--bg); }
+.password-card { width:min(100%, 420px); padding:28px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:0 12px 36px rgba(0,0,0,.12); }
+.password-card h1 { margin:0 0 8px; font-size:1.4rem; }
+.password-card p { margin:0 0 18px; color:var(--muted); }
+.password-card label { display:block; margin-bottom:6px; font-weight:600; }
+.password-card input { width:100%; min-height:44px; margin-bottom:14px; padding:10px 12px; font:inherit; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:6px; }
+.password-card .btn { width:100%; }
+.password-error { margin:10px 0 0 !important; color:var(--error) !important; font-weight:600; }
+@media print { #passwordGate { display:none !important; } }
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div id="passwordGate">
+  <form id="passwordForm" class="password-card">
+    <h1>Konfigurator Transformer</h1>
+    <p>Please enter the password to continue.</p>
+    <label for="pagePassword">Password</label>
+    <input id="pagePassword" name="password" type="password" autocomplete="current-password" required autofocus>
+    <button class="btn primary" type="submit">Continue</button>
+    <p id="passwordError" class="password-error" role="alert" hidden>Incorrect password. Please try again.</p>
+  </form>
+</div>
 
 <!-- ================= KOPFBEREICH ================= -->
 <header>
@@ -356,7 +379,7 @@ select { height:46px; }
       <path d="M36 6 V62 M44 6 V62"/>
     </svg>
     <div class="head-txt">
-      <h1>Inquiry: customized transformer</h1>
+      <h1>Konfigurator Transformer</h1>
       <p>Please fill in what you know. Necessary fields are marked with <span class="rq">*</span>.</p>
     </div>
     <div class="head-side">
@@ -727,6 +750,23 @@ select { height:46px; }
 <div id="printView"></div>
 
 <script>
+/* Einfacher clientseitiger Sichtschutz – kein echter Zugriffsschutz */
+const PASSWORD_HASH = "e6487c3d3b27ecf37b58228efdd1df09da6cee9596111187e6b0eea0b848f551";
+const passwordForm = document.getElementById("passwordForm");
+passwordForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = document.getElementById("pagePassword");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input.value));
+  const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+  if (hash !== PASSWORD_HASH) {
+    document.getElementById("passwordError").hidden = false;
+    input.select();
+    return;
+  }
+  document.body.classList.remove("locked");
+  document.getElementById("passwordGate").hidden = true;
+});
+
 /* =========================================================
    EINSTELLUNGEN – hier anpassen
    ========================================================= */

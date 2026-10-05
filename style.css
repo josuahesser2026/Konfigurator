@@ -335,3 +335,15 @@ select { height:46px; }
 .dual-tag { position:absolute; top:-19px; font-size:.7rem; font-weight:700; line-height:1; color:var(--primary); pointer-events:none; white-space:nowrap; }
 .dual-tag-min { transform:translateX(calc(-50% - var(--v, 0px))); }
 .dual-tag-max { transform:translateX(calc(-50% + var(--v, 0px))); }
+
+/* Einfacher Sichtschutz; kein serverseitiger Passwortschutz */
+body.locked > header, body.locked > main, body.locked > #printView { visibility:hidden; }
+#passwordGate { position:fixed; z-index:1000; inset:0; display:grid; place-items:center; padding:20px; background:var(--bg); }
+.password-card { width:min(100%, 420px); padding:28px; border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:0 12px 36px rgba(0,0,0,.12); }
+.password-card h1 { margin:0 0 8px; font-size:1.4rem; }
+.password-card p { margin:0 0 18px; color:var(--muted); }
+.password-card label { display:block; margin-bottom:6px; font-weight:600; }
+.password-card input { width:100%; min-height:44px; margin-bottom:14px; padding:10px 12px; font:inherit; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:6px; }
+.password-card .btn { width:100%; }
+.password-error { margin:10px 0 0 !important; color:var(--error) !important; font-weight:600; }
+@media print { #passwordGate { display:none !important; } }

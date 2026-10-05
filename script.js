@@ -1,4 +1,23 @@
 /* =========================================================
+   EINFACHER SICHTSCHUTZ (kein echter Zugriffsschutz)
+   ========================================================= */
+const PASSWORD_HASH = "e6487c3d3b27ecf37b58228efdd1df09da6cee9596111187e6b0eea0b848f551";
+const passwordForm = document.getElementById("passwordForm");
+passwordForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = document.getElementById("pagePassword");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input.value));
+  const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+  if (hash !== PASSWORD_HASH) {
+    document.getElementById("passwordError").hidden = false;
+    input.select();
+    return;
+  }
+  document.body.classList.remove("locked");
+  document.getElementById("passwordGate").hidden = true;
+});
+
+/* =========================================================
    EINSTELLUNGEN – hier anpassen
    ========================================================= */
 const EMPFAENGER = "josua.hesser.mail@gmail.com";   // an diese Adresse schickt der Kunde das PDF
