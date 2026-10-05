@@ -1402,14 +1402,21 @@ function bauDruckansicht() {
 }
 
 // auch bei Strg+P bzw. Drucken über das Browsermenü
+window.addEventListener("keydown", event => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "p") {
+    aktualisiereDrucktitel();
+    bauDruckansicht();
+  }
+}, true);
 window.addEventListener("beforeprint", bauDruckansicht);
 
 // Als PDF drucken
 // Schritt 1: Datenblatt als PDF speichern (Pflichtfelder werden vorher geprüft)
 document.getElementById("print").addEventListener("click", () => {
   if (!pruefePflicht()) return;
+  aktualisiereDrucktitel();
   bauDruckansicht();
-  window.print();
+  requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
 });
 </script>
 </body>
